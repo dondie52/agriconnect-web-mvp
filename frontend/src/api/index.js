@@ -149,4 +149,19 @@ export const referenceAPI = {
   getRegions: () => api.get('/regions'),
 };
 
+// Chat API (Chatbot)
+export const chatAPI = {
+  sendMessage: (message) => api.post('/chat', { message }),
+};
+
+// AI API
+export const aiAPI = {
+  getFarmingTips: (data) => api.post('/ai/farming-tips', data),
+};
+
+// Dashboard API
+export const dashboardAPI = {
+  getStats: () => api.get('/dashboard/stats'),
+};
+
 export default api;

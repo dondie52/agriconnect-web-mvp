@@ -98,7 +98,7 @@ const BuyerRequest = {
       `SELECT br.*, 
               c.name as crop_name, c.category as crop_category,
               r.name as region_name,
-              u.name as buyer_name
+              u.name as buyer_name, u.phone as buyer_phone
        FROM buyer_requests br
        JOIN crops c ON br.crop_id = c.id
        LEFT JOIN regions r ON br.region_id = r.id

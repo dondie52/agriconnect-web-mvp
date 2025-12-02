@@ -60,7 +60,9 @@ export const AuthProvider = ({ children }) => {
     setError(null);
     try {
       const response = await authAPI.register(userData);
-      const { user, token } = response.data.data;
+      // Handle both new format { user, token } and old format { data: { user, token } }
+      const user = response.data.user || response.data.data?.user;
+      const token = response.data.token || response.data.data?.token;
       
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));

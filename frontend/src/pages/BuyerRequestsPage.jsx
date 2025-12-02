@@ -29,10 +29,21 @@ const BuyerRequestsPage = () => {
   const { data: crops } = useCrops();
   const { data: regions } = useRegions();
 
-  // Use different API based on role
+  // Call BOTH hooks unconditionally with enabled option
+  // Only one will actually fetch based on the user's role
+  const relevantRequestsQuery = useRelevantRequests(
+    { page, limit: 10 },
+    { enabled: isFarmer }
+  );
+  const buyerRequestsQuery = useBuyerRequests(
+    { ...filters, page, limit: 10 },
+    { enabled: !isFarmer }
+  );
+
+  // Select the appropriate result based on role
   const { data: requestsData, isLoading } = isFarmer 
-    ? useRelevantRequests({ page, limit: 10 })
-    : useBuyerRequests({ ...filters, page, limit: 10 });
+    ? relevantRequestsQuery 
+    : buyerRequestsQuery;
 
   const cropOptions = crops?.map(c => ({ value: c.id, label: c.name })) || [];
   const regionOptions = regions?.map(r => ({ value: r.id, label: r.name })) || [];

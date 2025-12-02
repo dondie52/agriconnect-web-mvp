@@ -16,14 +16,58 @@ const weatherRoutes = require('./weather');
 const cropPlanRoutes = require('./cropPlans');
 const analyticsRoutes = require('./analytics');
 const adminRoutes = require('./admin');
+const aiRoutes = require('./aiRoutes');
 
-// API health check
-router.get('/health', (req, res) => {
+// Import controllers
+const dashboardController = require('../controllers/dashboardController');
+
+// Import middleware
+const { auth } = require('../middleware/auth');
+
+// Import database pool and query for test routes
+const { pool, query } = require('../config/db');
+
+// Server start time for uptime calculation
+const serverStartTime = Date.now();
+
+// API health check (deployment platforms require this format)
+router.get('/health', async (req, res) => {
+  const uptimeSeconds = ((Date.now() - serverStartTime) / 1000).toFixed(2);
+  
+  // Check database connection
+  let dbStatus = 'disconnected';
+  try {
+    await pool.query('SELECT 1');
+    dbStatus = 'connected';
+  } catch (error) {
+    console.error('Health check DB error:', error.message);
+  }
+  
   res.json({
-    success: true,
-    message: 'AgriConnect API is running',
+    status: 'ok',
+    db: dbStatus,
+    uptime: `${uptimeSeconds}s`,
     timestamp: new Date().toISOString()
   });
+});
+
+// Database connection test route
+router.get('/test-db', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT NOW()');
+    res.json({ 
+      status: 'ok', 
+      time: result.rows[0],
+      message: 'Supabase connection successful'
+    });
+  } catch (error) {
+    console.error('Database test failed:', error.message);
+    res.status(500).json({ 
+      status: 'error', 
+      message: 'Database connection failed',
+      error: error.message
+    });
+  }
 });
 
 // Mount routes
@@ -37,6 +81,10 @@ router.use('/weather', weatherRoutes);
 router.use('/crop-plans', cropPlanRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin', adminRoutes);
+router.use('/ai', aiRoutes);
+
+// Dashboard stats endpoint (optimized for real-time updates)
+router.get('/dashboard/stats', auth, dashboardController.getStats);
 
 // Reference data endpoints (public)
 const { Crop, Region } = require('../models/CropRegion');
@@ -56,6 +104,25 @@ router.get('/regions', async (req, res) => {
     res.json({ success: true, data: regions });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch regions' });
+  }
+});
+
+// Debug route - list recent users (for testing registration)
+router.get('/debug/users', async (req, res) => {
+  try {
+    const result = await query('SELECT id, name, email, phone, role, region_id, is_active, created_at FROM users ORDER BY id DESC LIMIT 20');
+    res.json({
+      success: true,
+      count: result.rows.length,
+      users: result.rows
+    });
+  } catch (error) {
+    console.error('Debug users error:', error.message);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to fetch users',
+      error: error.message
+    });
   }
 });
 

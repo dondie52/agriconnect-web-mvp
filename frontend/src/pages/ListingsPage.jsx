@@ -185,7 +185,13 @@ const ListingsPage = () => {
 
 // Listing Card Component
 const ListingCard = ({ listing, onClick }) => {
-  const images = listing.images ? JSON.parse(listing.images) : [];
+  let images = [];
+  try {
+    images = listing.images ? JSON.parse(listing.images) : [];
+  } catch (e) {
+    // Handle invalid JSON in images field
+    images = [];
+  }
   const firstImage = images[0];
 
   return (

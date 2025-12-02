@@ -15,7 +15,7 @@ AgriConnect addresses three major obstacles faced by Botswana's farmers:
 
 ### Backend
 - **Runtime**: Node.js with Express.js
-- **Database**: PostgreSQL
+- **Database**: PostgreSQL (Supabase hosted)
 - **Authentication**: JWT (JSON Web Tokens)
 - **File Storage**: Local uploads (switchable to S3)
 - **API Style**: RESTful
@@ -88,30 +88,39 @@ agriconnect/
    ```
 
 4. **Configure your `.env` file**
+
+   **Option A: Using Supabase (Recommended)**
    ```env
+   DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
    PORT=5000
    NODE_ENV=development
-   
+   JWT_SECRET=your_super_secret_key
+   JWT_EXPIRES_IN=7d
+   OPENWEATHER_API_KEY=your_api_key
+   FRONTEND_URL=http://localhost:3000
+   ```
+
+   **Option B: Using Local PostgreSQL**
+   ```env
    DB_HOST=localhost
    DB_PORT=5432
    DB_NAME=agriconnect
    DB_USER=postgres
    DB_PASSWORD=your_password
-   
+   PORT=5000
+   NODE_ENV=development
    JWT_SECRET=your_super_secret_key
    JWT_EXPIRES_IN=7d
-   
    OPENWEATHER_API_KEY=your_api_key
-   
    FRONTEND_URL=http://localhost:3000
    ```
 
-5. **Create database**
+5. **Test database connection**
    ```bash
-   createdb agriconnect
+   node test-db.js
    ```
 
-6. **Run migrations**
+6. **Run migrations** (if using local PostgreSQL, create database first: `createdb agriconnect`)
    ```bash
    npm run migrate
    ```
@@ -124,6 +133,11 @@ agriconnect/
 8. **Start the server**
    ```bash
    npm run dev
+   ```
+
+9. **Verify database connection via API**
+   ```bash
+   curl http://localhost:5000/api/test-db
    ```
 
 ### Frontend Setup
@@ -247,6 +261,85 @@ The UI follows a clean, farmer-friendly design:
 
 ## 🚢 Deployment
 
+### Required Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `DATABASE_URL` | PostgreSQL connection string (Supabase) | `postgresql://postgres:password@db.xxx.supabase.co:5432/postgres` |
+| `PORT` | Server port | `10000` |
+| `NODE_ENV` | Environment mode | `production` |
+| `JWT_SECRET` | Secret key for JWT tokens | `your-secret-key` |
+| `JWT_EXPIRES_IN` | JWT token expiration | `7d` |
+| `FRONTEND_URL` | Frontend URL for CORS | `https://your-frontend.vercel.app` |
+| `OPENWEATHER_API_KEY` | OpenWeather API key | `your-api-key` |
+
+### Local Development with Supabase
+
+1. **Create a Supabase project** at [supabase.com](https://supabase.com)
+
+2. **Get your DATABASE_URL**:
+   - Go to Supabase Dashboard → Settings → Database
+   - Copy the "URI" connection string
+   - Replace `[YOUR-PASSWORD]` with your database password
+
+3. **Set up your `.env` file**:
+   ```env
+   DATABASE_URL=postgresql://postgres:[YOUR-PASSWORD]@db.[PROJECT-REF].supabase.co:5432/postgres
+   ```
+
+4. **Test the connection**:
+   ```bash
+   cd backend
+   node test-db.js
+   ```
+
+5. **Run migrations on Supabase**:
+   ```bash
+   npm run migrate
+   ```
+
+### Deploy Backend to Render
+
+1. **Create account** at [render.com](https://render.com)
+
+2. **Create a new Web Service**:
+   - Connect your GitHub repository
+   - Select the `backend` directory as root
+   - Set build command: `npm install`
+   - Set start command: `npm start`
+
+3. **Configure Environment Variables** in Render Dashboard:
+   ```
+   DATABASE_URL=postgresql://postgres:[PASSWORD]@db.[PROJECT].supabase.co:5432/postgres
+   PORT=10000
+   NODE_ENV=production
+   JWT_SECRET=your-production-secret
+   JWT_EXPIRES_IN=7d
+   FRONTEND_URL=https://your-frontend-domain.com
+   OPENWEATHER_API_KEY=your-api-key
+   ```
+
+4. **Deploy** - Render will automatically build and deploy
+
+5. **Verify deployment**:
+   ```bash
+   curl https://your-backend.onrender.com/api/test-db
+   ```
+
+### Deploy Frontend to Vercel
+
+1. **Create account** at [vercel.com](https://vercel.com)
+
+2. **Import your repository** and select the `frontend` directory
+
+3. **Configure Environment Variables**:
+   ```
+   REACT_APP_API_URL=https://your-backend.onrender.com/api
+   REACT_APP_UPLOAD_URL=https://your-backend.onrender.com/uploads
+   ```
+
+4. **Deploy** - Vercel will automatically build and deploy
+
 ### Deploy to Railway
 
 1. Create a Railway account at [railway.app](https://railway.app)
@@ -258,13 +351,6 @@ The UI follows a clean, farmer-friendly design:
    railway up
    ```
 4. Deploy frontend to Vercel/Netlify
-
-### Deploy to Render
-
-1. Create account at [render.com](https://render.com)
-2. Create PostgreSQL database
-3. Create Web Service for backend
-4. Create Static Site for frontend
 
 ## 🧪 Testing
 
