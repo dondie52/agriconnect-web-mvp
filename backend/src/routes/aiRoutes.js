@@ -28,3 +28,4 @@ router.post('/farming-tips', aiController.getFarmingTips);
 module.exports = router;
 
 
+

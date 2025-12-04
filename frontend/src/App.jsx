@@ -19,12 +19,32 @@ import NotificationsPage from './pages/NotificationsPage';
 import { LandingPage } from './pages/landing';
 import RoleSelectPage from './pages/auth/RoleSelectPage';
 
+// Info Pages
+import {
+  AboutPage,
+  HowItWorksPage,
+  MissionPage,
+  SuccessStoriesPage,
+  CareersPage,
+  PressPage,
+  HelpCenterPage,
+  SafetyPage,
+  FAQPage,
+  TermsPage,
+  PrivacyPage,
+  USSDGuidePage,
+  SellerGuidePage,
+  CommunityPage,
+  CookiesPage,
+} from './pages/info';
+
 // Global Chatbot Widget
 import Chatbot from './components/chatbot';
 
 // Lazy load other pages for better performance
 const MyListingsPage = React.lazy(() => import('./pages/MyListingsPage'));
 const ListingDetailPage = React.lazy(() => import('./pages/ListingDetailPage'));
+const EditListingPage = React.lazy(() => import('./pages/EditListingPage'));
 const BuyerRequestsPage = React.lazy(() => import('./pages/BuyerRequestsPage'));
 const CreateRequestPage = React.lazy(() => import('./pages/CreateRequestPage'));
 const WeatherPage = React.lazy(() => import('./pages/WeatherPage'));
@@ -72,6 +92,25 @@ function App() {
               } />
 
               {/* ==================== */}
+              {/* Info / Static Pages */}
+              {/* ==================== */}
+              <Route path="/about" element={<AboutPage />} />
+              <Route path="/how-it-works" element={<HowItWorksPage />} />
+              <Route path="/mission" element={<MissionPage />} />
+              <Route path="/success-stories" element={<SuccessStoriesPage />} />
+              <Route path="/careers" element={<CareersPage />} />
+              <Route path="/press" element={<PressPage />} />
+              <Route path="/help" element={<HelpCenterPage />} />
+              <Route path="/safety" element={<SafetyPage />} />
+              <Route path="/faq" element={<FAQPage />} />
+              <Route path="/terms" element={<TermsPage />} />
+              <Route path="/privacy" element={<PrivacyPage />} />
+              <Route path="/ussd-guide" element={<USSDGuidePage />} />
+              <Route path="/seller-guide" element={<SellerGuidePage />} />
+              <Route path="/community" element={<CommunityPage />} />
+              <Route path="/cookies" element={<CookiesPage />} />
+
+              {/* ==================== */}
               {/* Farmer Routes */}
               {/* ==================== */}
               <Route path="/farmer/dashboard" element={
@@ -87,6 +126,16 @@ function App() {
               <Route path="/farmer/create-listing" element={
                 <FarmerRoute>
                   <CreateListingPage />
+                </FarmerRoute>
+              } />
+              <Route path="/farmer/edit-listing/:id" element={
+                <FarmerRoute>
+                  <EditListingPage />
+                </FarmerRoute>
+              } />
+              <Route path="/edit-listing/:id" element={
+                <FarmerRoute>
+                  <EditListingPage />
                 </FarmerRoute>
               } />
               <Route path="/farmer/crop-planner" element={

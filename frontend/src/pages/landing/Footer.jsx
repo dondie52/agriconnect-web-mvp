@@ -20,36 +20,36 @@ const Footer = () => {
   const currentYear = new Date().getFullYear();
 
   const aboutLinks = [
-    { name: 'About AgriConnect', href: '#about' },
-    { name: 'How It Works', href: '#how-it-works' },
-    { name: 'Our Mission', href: '#mission' },
-    { name: 'Success Stories', href: '#testimonials' },
-    { name: 'Careers', href: '#careers' },
-    { name: 'Press', href: '#press' },
+    { name: 'About AgriConnect', href: '/about' },
+    { name: 'How It Works', href: '/how-it-works' },
+    { name: 'Our Mission', href: '/mission' },
+    { name: 'Success Stories', href: '/success-stories' },
+    { name: 'Careers', href: '/careers' },
+    { name: 'Press', href: '/press' },
   ];
 
   const supportLinks = [
-    { name: 'Help Center', href: '#help' },
-    { name: 'Safety Information', href: '#safety' },
-    { name: 'FAQs', href: '#faq' },
-    { name: 'Terms of Service', href: '#terms' },
-    { name: 'Privacy Policy', href: '#privacy' },
-    { name: 'SMS/USSD Guide', href: '#ussd' },
+    { name: 'Help Center', href: '/help' },
+    { name: 'Safety Information', href: '/safety' },
+    { name: 'FAQs', href: '/faq' },
+    { name: 'Terms of Service', href: '/terms' },
+    { name: 'Privacy Policy', href: '/privacy' },
+    { name: 'SMS/USSD Guide', href: '/ussd-guide' },
   ];
 
   const farmerLinks = [
-    { name: 'Start Selling', href: '/register?role=farmer', isRoute: true },
-    { name: 'Seller Guide', href: '#seller-guide' },
-    { name: 'Pricing Tools', href: '/prices', isRoute: true },
-    { name: 'Weather Alerts', href: '/weather', isRoute: true },
-    { name: 'Crop Planner', href: '/crop-planner', isRoute: true },
-    { name: 'Farmer Community', href: '#community' },
+    { name: 'Start Selling', href: '/register?role=farmer', badge: 'Free' },
+    { name: 'Seller Guide', href: '/seller-guide' },
+    { name: 'Pricing Tools', href: '/prices' },
+    { name: 'Weather Alerts', href: '/weather' },
+    { name: 'Crop Planner', href: '/farmer/crop-planner' },
+    { name: 'Farmer Community', href: '/community' },
   ];
 
   const socialLinks = [
     { name: 'Facebook', icon: Facebook, href: 'https://facebook.com/agriconnect', color: 'hover:bg-blue-600' },
     { name: 'Instagram', icon: Instagram, href: 'https://instagram.com/agriconnect', color: 'hover:bg-pink-600' },
-    { name: 'WhatsApp', icon: MessageCircle, href: 'https://wa.me/26712345678', color: 'hover:bg-green-600' },
+    { name: 'WhatsApp', icon: MessageCircle, href: 'https://wa.me/26776984827', color: 'hover:bg-green-600' },
     { name: 'X (Twitter)', icon: Twitter, href: 'https://twitter.com/agriconnect', color: 'hover:bg-neutral-600' },
   ];
 
@@ -100,13 +100,13 @@ const Footer = () => {
             <ul className="space-y-3">
               {aboutLinks.map((link) => (
                 <li key={link.name}>
-                  <a 
-                    href={link.href}
+                  <Link 
+                    to={link.href}
                     className="text-neutral-400 hover:text-white transition-colors text-sm
                              hover:translate-x-1 inline-flex items-center gap-1"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -121,12 +121,12 @@ const Footer = () => {
             <ul className="space-y-3">
               {supportLinks.map((link) => (
                 <li key={link.name}>
-                  <a 
-                    href={link.href}
+                  <Link 
+                    to={link.href}
                     className="text-neutral-400 hover:text-white transition-colors text-sm"
                   >
                     {link.name}
-                  </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -141,27 +141,18 @@ const Footer = () => {
             <ul className="space-y-3">
               {farmerLinks.map((link) => (
                 <li key={link.name}>
-                  {link.isRoute ? (
-                    <Link 
-                      to={link.href}
-                      className="text-neutral-400 hover:text-white transition-colors text-sm
-                               inline-flex items-center gap-1"
-                    >
-                      {link.name}
-                      {link.href.startsWith('/register') && (
-                        <span className="text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded">
-                          Free
-                        </span>
-                      )}
-                    </Link>
-                  ) : (
-                    <a 
-                      href={link.href}
-                      className="text-neutral-400 hover:text-white transition-colors text-sm"
-                    >
-                      {link.name}
-                    </a>
-                  )}
+                  <Link 
+                    to={link.href}
+                    className="text-neutral-400 hover:text-white transition-colors text-sm
+                             inline-flex items-center gap-1"
+                  >
+                    {link.name}
+                    {link.badge && (
+                      <span className="text-xs bg-primary-500 text-white px-1.5 py-0.5 rounded">
+                        {link.badge}
+                      </span>
+                    )}
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -175,18 +166,18 @@ const Footer = () => {
             </h4>
             <div className="space-y-4">
               <a 
-                href="mailto:hello@agriconnect.bw" 
+                href="mailto:monigeorgy42@gmail.com" 
                 className="flex items-start gap-3 text-neutral-400 hover:text-white transition-colors"
               >
                 <Mail size={18} className="shrink-0 mt-0.5" />
-                <span className="text-sm">hello@agriconnect.bw</span>
+                <span className="text-sm">monigeorgy42@gmail.com</span>
               </a>
               <a 
-                href="tel:+26712345678" 
+                href="tel:+26776984827" 
                 className="flex items-start gap-3 text-neutral-400 hover:text-white transition-colors"
               >
                 <Phone size={18} className="shrink-0 mt-0.5" />
-                <span className="text-sm">+267 123 4567</span>
+                <span className="text-sm">(+267) 76 984 827</span>
               </a>
               <div className="flex items-start gap-3 text-neutral-400">
                 <MapPin size={18} className="shrink-0 mt-0.5" />
@@ -288,9 +279,9 @@ const Footer = () => {
             </div>
 
             <div className="flex items-center gap-6 text-sm text-neutral-500">
-              <a href="#terms" className="hover:text-white transition-colors">Terms</a>
-              <a href="#privacy" className="hover:text-white transition-colors">Privacy</a>
-              <a href="#cookies" className="hover:text-white transition-colors">Cookies</a>
+              <Link to="/terms" className="hover:text-white transition-colors">Terms</Link>
+              <Link to="/privacy" className="hover:text-white transition-colors">Privacy</Link>
+              <Link to="/cookies" className="hover:text-white transition-colors">Cookies</Link>
             </div>
           </div>
         </div>

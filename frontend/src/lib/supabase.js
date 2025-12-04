@@ -27,3 +27,4 @@ export const supabase = supabaseUrl && supabaseAnonKey
 export default supabase;
 
 
+

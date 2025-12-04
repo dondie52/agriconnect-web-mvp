@@ -17,6 +17,7 @@ const cropPlanRoutes = require('./cropPlans');
 const analyticsRoutes = require('./analytics');
 const adminRoutes = require('./admin');
 const aiRoutes = require('./aiRoutes');
+const chatRoutes = require('./chatRoutes');
 
 // Import controllers
 const dashboardController = require('../controllers/dashboardController');
@@ -82,6 +83,7 @@ router.use('/crop-plans', cropPlanRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin', adminRoutes);
 router.use('/ai', aiRoutes);
+router.use('/chat', chatRoutes);
 
 // Dashboard stats endpoint (optimized for real-time updates)
 router.get('/dashboard/stats', auth, dashboardController.getStats);

@@ -184,15 +184,6 @@ const LoginPage = () => {
           </Link>
         </p>
 
-        {/* Demo Credentials */}
-        <div className="mt-8 p-4 bg-neutral-50 rounded-lg">
-          <p className="text-xs text-neutral-500 text-center mb-2">Demo Credentials</p>
-          <div className="text-xs text-neutral-600 space-y-1">
-            <p><strong>Farmer:</strong> 26776543210 / farmer123</p>
-            <p><strong>Buyer:</strong> 26774567890 / buyer123</p>
-            <p><strong>Admin:</strong> 26712345678 / admin123</p>
-          </div>
-        </div>
       </div>
     </PublicLayout>
   );

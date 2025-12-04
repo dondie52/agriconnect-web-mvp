@@ -78,9 +78,13 @@ const MyListingsPage = () => {
               {listings.map((listing) => {
                 let images = [];
                 try {
-                  images = listing.images ? JSON.parse(listing.images) : [];
+                  // Handle both array and JSON string formats
+                  if (Array.isArray(listing.images)) {
+                    images = listing.images;
+                  } else if (typeof listing.images === 'string') {
+                    images = JSON.parse(listing.images);
+                  }
                 } catch (e) {
-                  // Handle invalid JSON in images field
                   images = [];
                 }
                 const firstImage = images[0];
@@ -136,7 +140,7 @@ const MyListingsPage = () => {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => navigate(`/edit-listing/${listing.id}`)}
+                        onClick={() => navigate(`/farmer/edit-listing/${listing.id}`)}
                       >
                         <Edit size={16} />
                       </Button>

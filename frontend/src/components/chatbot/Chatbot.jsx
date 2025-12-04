@@ -64,25 +64,34 @@ const Chatbot = ({
       };
       setMessages((prev) => [...prev, botMessage]);
     } catch (error) {
-      console.log('Chat API not available, using mock response');
+      console.log('Chat API not available, using fallback response');
       
-      // Mock response fallback
-      const mockResponses = [
-        "Hello! I'm your AgriConnect assistant. How can I help you today?",
-        "I can help you with listing produce, finding buyers, checking market prices, and weather updates.",
-        "Would you like to know about current market prices for your crops?",
-        "I'm here to connect farmers with buyers across Botswana!",
-        "For detailed assistance, please visit our Help Center or contact support.",
-      ];
+      // Context-aware fallback responses
+      const lowerMessage = trimmedMessage.toLowerCase();
+      let fallbackResponse;
       
-      const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+      if (lowerMessage.includes('buy') || lowerMessage.includes('purchase')) {
+        fallbackResponse = "I can help you find produce! Check the Listings page to browse available crops, or tell me what you're looking for.";
+      } else if (lowerMessage.includes('sell') || lowerMessage.includes('post') || lowerMessage.includes('list')) {
+        fallbackResponse = "To sell your produce, go to Create Listing from the menu. You'll add details like crop type, quantity, and price. Would you like guidance?";
+      } else if (lowerMessage.includes('price') || lowerMessage.includes('cost')) {
+        fallbackResponse = "Check the Market Prices page to see current prices for crops across Botswana regions.";
+      } else if (lowerMessage.includes('plant') || lowerMessage.includes('grow') || lowerMessage.includes('farm')) {
+        fallbackResponse = "For farming in Botswana: wet season (Nov-Mar) is best for maize, sorghum, and millet. Dry season suits irrigated vegetables like tomatoes and spinach.";
+      } else if (lowerMessage.includes('help') || lowerMessage.includes('support')) {
+        fallbackResponse = "I can help you with finding produce, creating listings, checking prices, or navigating AgriConnect. What do you need?";
+      } else if (lowerMessage.match(/^(hi|hello|hey|dumela)/)) {
+        fallbackResponse = "Dumela! 👋 Welcome to AgriConnect. I can help you buy or sell produce, get farming tips, or navigate the platform. What can I help with?";
+      } else {
+        fallbackResponse = "I'm here to help! I can assist with:\n• Finding produce to buy\n• Creating listings to sell\n• Checking market prices\n• Farming tips for Botswana\n\nWhat would you like help with?";
+      }
       
       // Simulate network delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      await new Promise((resolve) => setTimeout(resolve, 600));
       
       const botMessage = {
         sender: 'bot',
-        text: randomResponse,
+        text: fallbackResponse,
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, botMessage]);
@@ -119,5 +128,6 @@ const Chatbot = ({
 };
 
 export default Chatbot;
+
 
 

@@ -1080,3 +1080,279 @@ async function generateResponse(userMessage) {
 - [ ] Integration with user authentication for personalized responses
 - [ ] Proactive greeting based on user behavior
 
+---
+
+## Footer Info Pages Implementation
+
+**Date:** December 4, 2025  
+**Purpose:** Create dedicated pages for all footer links and make them functional with React Router
+
+---
+
+### Summary
+
+Implemented 15 new informational pages for all footer links, converting anchor tags (`#`) to React Router `<Link>` components. Each page has consistent styling, responsive design, and proper navigation back to the home page.
+
+---
+
+### Files Created
+
+#### Info Pages Directory: `frontend/src/pages/info/`
+
+| # | File | Route | Description |
+|---|------|-------|-------------|
+| 1 | `AboutPage.jsx` | `/about` | Company info, founder section, stats, story |
+| 2 | `HowItWorksPage.jsx` | `/how-it-works` | 4-step process for farmers and buyers |
+| 3 | `MissionPage.jsx` | `/mission` | Vision, values, and 2025 goals |
+| 4 | `SuccessStoriesPage.jsx` | `/success-stories` | Farmer testimonials with income stats |
+| 5 | `CareersPage.jsx` | `/careers` | Job openings, benefits, company culture |
+| 6 | `PressPage.jsx` | `/press` | Media contact, press releases, brand assets |
+| 7 | `HelpCenterPage.jsx` | `/help` | Searchable help categories, contact options |
+| 8 | `SafetyPage.jsx` | `/safety` | Safety tips, do's/don'ts, verification system |
+| 9 | `FAQPage.jsx` | `/faq` | Accordion FAQ by category |
+| 10 | `TermsPage.jsx` | `/terms` | Terms of Service legal document |
+| 11 | `PrivacyPage.jsx` | `/privacy` | Privacy Policy with data types breakdown |
+| 12 | `USSDGuidePage.jsx` | `/ussd-guide` | SMS/USSD commands and codes guide |
+| 13 | `SellerGuidePage.jsx` | `/seller-guide` | Complete selling guide with tips |
+| 14 | `CommunityPage.jsx` | `/community` | Farmer groups, events, social links |
+| 15 | `CookiesPage.jsx` | `/cookies` | Cookie policy and preferences |
+
+#### Index File: `frontend/src/pages/info/index.js`
+**Purpose:** Barrel exports for all info pages
+
+```javascript
+export { default as AboutPage } from './AboutPage';
+export { default as HowItWorksPage } from './HowItWorksPage';
+// ... all 15 pages exported
+```
+
+---
+
+### Files Modified
+
+#### 1. `frontend/src/pages/landing/Footer.jsx`
+**Changes:**
+- Converted all `<a href="#">` anchor tags to React Router `<Link to="">` components
+- Updated link arrays with proper route paths instead of hash anchors
+- All footer links now navigate to dedicated pages
+
+**Before:**
+```javascript
+const aboutLinks = [
+  { name: 'About AgriConnect', href: '#about' },
+  { name: 'How It Works', href: '#how-it-works' },
+  // ...
+];
+```
+
+**After:**
+```javascript
+const aboutLinks = [
+  { name: 'About AgriConnect', href: '/about' },
+  { name: 'How It Works', href: '/how-it-works' },
+  // ...
+];
+```
+
+---
+
+#### 2. `frontend/src/App.jsx`
+**Changes:**
+- Added imports for all 15 info pages from `./pages/info`
+- Added 15 new routes in the "Info / Static Pages" section
+
+**Added imports:**
+```javascript
+import {
+  AboutPage,
+  HowItWorksPage,
+  MissionPage,
+  SuccessStoriesPage,
+  CareersPage,
+  PressPage,
+  HelpCenterPage,
+  SafetyPage,
+  FAQPage,
+  TermsPage,
+  PrivacyPage,
+  USSDGuidePage,
+  SellerGuidePage,
+  CommunityPage,
+  CookiesPage,
+} from './pages/info';
+```
+
+**Added routes:**
+```javascript
+{/* Info / Static Pages */}
+<Route path="/about" element={<AboutPage />} />
+<Route path="/how-it-works" element={<HowItWorksPage />} />
+<Route path="/mission" element={<MissionPage />} />
+<Route path="/success-stories" element={<SuccessStoriesPage />} />
+<Route path="/careers" element={<CareersPage />} />
+<Route path="/press" element={<PressPage />} />
+<Route path="/help" element={<HelpCenterPage />} />
+<Route path="/safety" element={<SafetyPage />} />
+<Route path="/faq" element={<FAQPage />} />
+<Route path="/terms" element={<TermsPage />} />
+<Route path="/privacy" element={<PrivacyPage />} />
+<Route path="/ussd-guide" element={<USSDGuidePage />} />
+<Route path="/seller-guide" element={<SellerGuidePage />} />
+<Route path="/community" element={<CommunityPage />} />
+<Route path="/cookies" element={<CookiesPage />} />
+```
+
+---
+
+### Page Design Features
+
+Each info page includes:
+
+1. **Header:** Sticky white header with "Back to Home" link
+2. **Hero Section:** Gradient background with icon, title, and description
+3. **Content Sections:** Organized content with cards, grids, and lists
+4. **CTA Section:** Call-to-action with buttons linking to registration
+5. **Footer:** Minimal footer with brand and copyright
+
+**Common UI Elements:**
+- Lucide React icons throughout
+- Responsive grid layouts (1→2→4 columns)
+- Hover effects and transitions
+- Consistent color scheme (primary green, neutrals)
+- Font family: Outfit (matching brand)
+
+---
+
+### Footer Link Mapping
+
+| Section | Link | Route |
+|---------|------|-------|
+| **About** | About AgriConnect | `/about` |
+| | How It Works | `/how-it-works` |
+| | Our Mission | `/mission` |
+| | Success Stories | `/success-stories` |
+| | Careers | `/careers` |
+| | Press | `/press` |
+| **Support** | Help Center | `/help` |
+| | Safety Information | `/safety` |
+| | FAQs | `/faq` |
+| | Terms of Service | `/terms` |
+| | Privacy Policy | `/privacy` |
+| | SMS/USSD Guide | `/ussd-guide` |
+| **For Farmers** | Start Selling | `/register?role=farmer` |
+| | Seller Guide | `/seller-guide` |
+| | Pricing Tools | `/prices` |
+| | Weather Alerts | `/weather` |
+| | Crop Planner | `/farmer/crop-planner` |
+| | Farmer Community | `/community` |
+| **Bottom Bar** | Terms | `/terms` |
+| | Privacy | `/privacy` |
+| | Cookies | `/cookies` |
+
+---
+
+### Files Summary
+
+| Type | Count | Files |
+|------|-------|-------|
+| **Created** | 16 | 15 info pages + index.js |
+| **Modified** | 2 | Footer.jsx, App.jsx |
+| **Total** | 18 | - |
+
+---
+
+## About Page Founder Update
+
+**Date:** December 4, 2025  
+**Purpose:** Update About page to show only the actual founder instead of fictional team members
+
+---
+
+### Summary
+
+Removed fictional team members (Kabo Moilwa, Thabo Molefe, Naledi Phetogo) and updated the About page to display only the real founder, Georgy Moni, with a professional photo.
+
+---
+
+### Files Modified
+
+#### 1. `frontend/src/pages/info/AboutPage.jsx`
+**Changes:**
+- Removed `team` array with 4 fictional members
+- Added `founder` object with single founder info
+- Replaced "Meet Our Team" section with "Meet the Founder" section
+- Added circular photo frame with fallback emoji
+- Enhanced styling with gradient background card
+
+**Before:**
+```javascript
+const team = [
+  { name: 'Georgy Moni', role: 'Founder & CEO', image: '👨‍💼' },
+  { name: 'Kabo Moilwa', role: 'Head of Operations', image: '👩‍💼' },
+  { name: 'Thabo Molefe', role: 'Lead Developer', image: '👨‍💻' },
+  { name: 'Naledi Phetogo', role: 'Marketing Director', image: '👩‍🎨' },
+];
+```
+
+**After:**
+```javascript
+const founder = {
+  name: 'Georgy Moni',
+  role: 'Founder & CEO',
+  image: '/founder.jpg',
+};
+```
+
+**New Founder Section:**
+```jsx
+<section className="py-16 bg-white">
+  <div className="max-w-7xl mx-auto px-4 md:px-6">
+    <h2>Meet the Founder</h2>
+    <div className="max-w-md mx-auto">
+      <div className="text-center p-8 bg-gradient-to-br from-primary-50 to-secondary-50 rounded-2xl shadow-lg">
+        <div className="w-40 h-40 mx-auto mb-6 rounded-full overflow-hidden border-4 border-white shadow-xl">
+          <img src="/founder.jpg" alt="Georgy Moni - Founder & CEO" />
+        </div>
+        <h3>{founder.name}</h3>
+        <p>{founder.role}</p>
+        <p>Passionate about empowering Botswana's farmers through technology.</p>
+      </div>
+    </div>
+  </div>
+</section>
+```
+
+---
+
+### Files Created
+
+#### `frontend/public/founder.jpg`
+**Purpose:** Founder profile photo
+**Source:** Copied from `my pic.jpeg` in project root
+**Usage:** Displayed in circular frame on About page
+
+---
+
+### Files Summary
+
+| Type | Count | Files |
+|------|-------|-------|
+| **Modified** | 1 | AboutPage.jsx |
+| **Created** | 1 | public/founder.jpg |
+| **Total** | 2 | - |
+
+---
+
+### Testing Checklist
+
+- [x] All 15 footer links navigate to dedicated pages
+- [x] Each page has "Back to Home" navigation
+- [x] Pages are responsive (mobile, tablet, desktop)
+- [x] About page shows founder photo correctly
+- [x] Fallback emoji displays if image fails to load
+- [x] Bottom bar links (Terms, Privacy, Cookies) work
+- [x] No broken links or 404 errors
+- [x] No console errors or warnings
+
+---
+

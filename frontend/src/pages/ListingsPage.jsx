@@ -187,9 +187,13 @@ const ListingsPage = () => {
 const ListingCard = ({ listing, onClick }) => {
   let images = [];
   try {
-    images = listing.images ? JSON.parse(listing.images) : [];
+    // Handle both array and JSON string formats
+    if (Array.isArray(listing.images)) {
+      images = listing.images;
+    } else if (typeof listing.images === 'string') {
+      images = JSON.parse(listing.images);
+    }
   } catch (e) {
-    // Handle invalid JSON in images field
     images = [];
   }
   const firstImage = images[0];
