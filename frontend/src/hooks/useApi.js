@@ -1,5 +1,6 @@
 /**
  * Custom React Hooks for AgriConnect
+ * Enhanced with real-time refresh options for dashboard stats
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
@@ -8,11 +9,11 @@ import {
   pricesAPI, 
   requestsAPI, 
   notificationsAPI,
-  weatherAPI,
   cropPlansAPI,
   analyticsAPI,
   referenceAPI,
-  adminAPI
+  adminAPI,
+  dashboardAPI
 } from '../api';
 
 // ==================== REFERENCE DATA HOOKS ====================
@@ -48,6 +49,7 @@ export const useListings = (params) => {
       const response = await listingsAPI.getAll(params);
       return response.data.data;
     },
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -69,6 +71,7 @@ export const useMyListings = (params) => {
       const response = await listingsAPI.getMyListings(params);
       return response.data.data;
     },
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -79,6 +82,8 @@ export const useListingStats = () => {
       const response = await listingsAPI.getStats();
       return response.data.data;
     },
+    refetchInterval: 5000, // Fallback refresh every 5s
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -90,6 +95,7 @@ export const useCreateListing = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       queryClient.invalidateQueries({ queryKey: ['myListings'] });
+      queryClient.invalidateQueries({ queryKey: ['listingStats'] });
     },
   });
 };
@@ -103,6 +109,7 @@ export const useUpdateListing = () => {
       queryClient.invalidateQueries({ queryKey: ['listing', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       queryClient.invalidateQueries({ queryKey: ['myListings'] });
+      queryClient.invalidateQueries({ queryKey: ['listingStats'] });
     },
   });
 };
@@ -115,6 +122,7 @@ export const useDeleteListing = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listings'] });
       queryClient.invalidateQueries({ queryKey: ['myListings'] });
+      queryClient.invalidateQueries({ queryKey: ['listingStats'] });
     },
   });
 };
@@ -128,6 +136,7 @@ export const useFarmerOrders = (params) => {
       const response = await ordersAPI.getFarmerOrders(params);
       return response.data.data;
     },
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -138,6 +147,7 @@ export const useBuyerOrders = (params) => {
       const response = await ordersAPI.getBuyerOrders(params);
       return response.data.data;
     },
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -148,6 +158,8 @@ export const useOrderStats = () => {
       const response = await ordersAPI.getStats();
       return response.data.data;
     },
+    refetchInterval: 5000, // Fallback refresh every 5s
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -159,6 +171,7 @@ export const useCreateOrder = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buyerOrders'] });
       queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['orderStats'] });
     },
   });
 };
@@ -172,6 +185,20 @@ export const useUpdateOrderStatus = () => {
       queryClient.invalidateQueries({ queryKey: ['farmerOrders'] });
       queryClient.invalidateQueries({ queryKey: ['orderStats'] });
     },
+  });
+};
+
+// ==================== DASHBOARD STATS HOOK ====================
+
+export const useDashboardStats = () => {
+  return useQuery({
+    queryKey: ['dashboardStats'],
+    queryFn: async () => {
+      const response = await dashboardAPI.getStats();
+      return response.data.data;
+    },
+    refetchInterval: 5000, // Fallback refresh every 5s
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -200,13 +227,15 @@ export const useUpdatePrice = () => {
 
 // ==================== BUYER REQUESTS HOOKS ====================
 
-export const useBuyerRequests = (params) => {
+export const useBuyerRequests = (params, options = {}) => {
   return useQuery({
     queryKey: ['buyerRequests', params],
     queryFn: async () => {
       const response = await requestsAPI.getAll(params);
       return response.data.data;
     },
+    enabled: options.enabled !== false,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -217,16 +246,20 @@ export const useMyRequests = (params) => {
       const response = await requestsAPI.getMyRequests(params);
       return response.data.data;
     },
+    refetchOnWindowFocus: true,
   });
 };
 
-export const useRelevantRequests = (params) => {
+export const useRelevantRequests = (params, options = {}) => {
   return useQuery({
     queryKey: ['relevantRequests', params],
     queryFn: async () => {
       const response = await requestsAPI.getRelevantForFarmer(params);
       return response.data.data;
     },
+    enabled: options.enabled !== false,
+    refetchInterval: 5000, // Refresh every 5s for real-time feel
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -238,6 +271,7 @@ export const useCreateRequest = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['buyerRequests'] });
       queryClient.invalidateQueries({ queryKey: ['myRequests'] });
+      queryClient.invalidateQueries({ queryKey: ['relevantRequests'] });
     },
   });
 };
@@ -252,6 +286,7 @@ export const useNotifications = (params) => {
       return response.data.data;
     },
     refetchInterval: 30000, // Refresh every 30 seconds
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -263,6 +298,7 @@ export const useUnreadCount = () => {
       return response.data.data.unread_count;
     },
     refetchInterval: 30000,
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -287,32 +323,6 @@ export const useMarkAllAsRead = () => {
       queryClient.invalidateQueries({ queryKey: ['notifications'] });
       queryClient.invalidateQueries({ queryKey: ['unreadCount'] });
     },
-  });
-};
-
-// ==================== WEATHER HOOKS ====================
-
-export const useWeather = (regionId) => {
-  return useQuery({
-    queryKey: ['weather', regionId],
-    queryFn: async () => {
-      const response = regionId 
-        ? await weatherAPI.getByRegion(regionId)
-        : await weatherAPI.getForUser();
-      return response.data.data;
-    },
-    staleTime: 1000 * 60 * 15, // 15 minutes
-  });
-};
-
-export const useWeatherForecast = (regionId) => {
-  return useQuery({
-    queryKey: ['forecast', regionId],
-    queryFn: async () => {
-      const response = await weatherAPI.getForecast(regionId);
-      return response.data.data;
-    },
-    staleTime: 1000 * 60 * 30, // 30 minutes
   });
 };
 
@@ -359,6 +369,8 @@ export const useFarmerAnalytics = (params) => {
       const response = await analyticsAPI.getFarmerSummary(params);
       return response.data.data;
     },
+    refetchInterval: 5000, // Refresh every 5s for real-time dashboard
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -381,6 +393,8 @@ export const useAdminDashboard = () => {
       const response = await adminAPI.getDashboard();
       return response.data.data;
     },
+    refetchInterval: 5000, // Refresh every 5s for real-time dashboard
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -391,6 +405,7 @@ export const useAdminUsers = (params) => {
       const response = await adminAPI.getUsers(params);
       return response.data.data;
     },
+    refetchOnWindowFocus: true,
   });
 };
 
@@ -401,6 +416,7 @@ export const useToggleUserStatus = () => {
     mutationFn: (id) => adminAPI.toggleUserStatus(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
+      queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
     },
   });
 };

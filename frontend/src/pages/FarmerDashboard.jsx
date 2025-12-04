@@ -1,27 +1,26 @@
 /**
  * Farmer Dashboard for AgriConnect
+ * Real-time updates via Supabase Realtime
  */
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   useListingStats, 
   useOrderStats, 
   useFarmerAnalytics,
-  useWeather,
   useRelevantRequests 
 } from '../hooks/useApi';
+import { useFarmerDashboardRealtime } from '../hooks/useRealtime';
 import { Layout } from '../components/Layout';
 import { StatCard, Card, PageLoading, StatusBadge, EmptyState } from '../components/UI';
+import WeatherCard from '../components/WeatherCard';
 import { 
   ShoppingBag, 
   DollarSign, 
   Eye, 
-  TrendingUp,
-  Cloud,
   Bell,
-  PlusCircle,
-  ArrowRight
+  PlusCircle
 } from 'lucide-react';
 
 const FarmerDashboard = () => {
@@ -29,8 +28,45 @@ const FarmerDashboard = () => {
   const { data: listingStats, isLoading: loadingListings } = useListingStats();
   const { data: orderStats, isLoading: loadingOrders } = useOrderStats();
   const { data: analytics } = useFarmerAnalytics({ days: 7 });
-  const { data: weather } = useWeather();
   const { data: relevantRequests } = useRelevantRequests({ limit: 5 });
+
+  // Track which stats were recently updated for animations
+  const [updatedStats, setUpdatedStats] = useState({});
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  // Handle real-time updates with visual feedback
+  const handleRealtimeUpdate = useCallback(({ table, payload }) => {
+    const now = new Date();
+    setLastUpdate(now);
+
+    // Mark related stats as updated for pulse animation
+    const statMappings = {
+      listings: ['listings'],
+      orders: ['orders'],
+      buyer_requests: ['requests']
+    };
+
+    const affectedStats = statMappings[table] || [];
+    
+    // Set updated state for each affected stat
+    affectedStats.forEach((stat) => {
+      setUpdatedStats((prev) => ({ ...prev, [stat]: true }));
+    });
+
+    // Clear the animation after 2 seconds
+    setTimeout(() => {
+      setUpdatedStats((prev) => {
+        const newState = { ...prev };
+        affectedStats.forEach((stat) => {
+          delete newState[stat];
+        });
+        return newState;
+      });
+    }, 2000);
+  }, []);
+
+  // Subscribe to real-time updates
+  useFarmerDashboardRealtime(handleRealtimeUpdate);
 
   if (loadingListings || loadingOrders) {
     return <Layout><PageLoading /></Layout>;
@@ -47,81 +83,57 @@ const FarmerDashboard = () => {
               Here's what's happening with your farm today.
             </p>
           </div>
-          <Link to="/create-listing" className="btn-primary inline-flex items-center gap-2">
-            <PlusCircle size={20} />
-            Create Listing
-          </Link>
+          <div className="flex items-center gap-3">
+            {lastUpdate && (
+              <span className="live-badge">
+                🟢 Live
+              </span>
+            )}
+            <Link to="/create-listing" className="btn-primary inline-flex items-center gap-2">
+              <PlusCircle size={20} />
+              Create Listing
+            </Link>
+          </div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={ShoppingBag}
-            label="Active Listings"
-            value={listingStats?.active_listings || 0}
-            color="primary"
-          />
-          <StatCard
-            icon={Bell}
-            label="Pending Orders"
-            value={orderStats?.pending_orders || 0}
-            color="warning"
-          />
+          <div className={updatedStats.listings ? 'stat-card-updated' : ''}>
+            <StatCard
+              icon={ShoppingBag}
+              label="Active Listings"
+              value={listingStats?.active_listings || 0}
+              color="primary"
+            />
+          </div>
+          <div className={updatedStats.orders ? 'stat-card-updated' : ''}>
+            <StatCard
+              icon={Bell}
+              label="Pending Orders"
+              value={orderStats?.pending_orders || 0}
+              color="warning"
+            />
+          </div>
           <StatCard
             icon={Eye}
             label="Total Views"
             value={analytics?.total_views || 0}
             color="info"
           />
-          <StatCard
-            icon={DollarSign}
-            label="Total Revenue"
-            value={`P${(orderStats?.total_revenue || 0).toLocaleString()}`}
-            color="success"
-          />
+          <div className={updatedStats.orders ? 'stat-card-updated' : ''}>
+            <StatCard
+              icon={DollarSign}
+              label="Total Revenue"
+              value={`P${(orderStats?.total_revenue || 0).toLocaleString()}`}
+              color="success"
+            />
+          </div>
         </div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Weather Widget */}
-          <Card className="lg:col-span-1">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="section-title flex items-center gap-2">
-                <Cloud size={20} className="text-primary-500" />
-                Weather
-              </h3>
-            </div>
-            
-            {weather ? (
-              <div className="text-center">
-                <p className="text-sm text-neutral-500 mb-2">{weather.region}</p>
-                <div className="text-5xl font-bold text-neutral-800">
-                  {weather.temperature}°C
-                </div>
-                <p className="text-neutral-600 capitalize mt-2">{weather.description}</p>
-                <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <p className="text-neutral-500">Humidity</p>
-                    <p className="font-medium">{weather.humidity}%</p>
-                  </div>
-                  <div>
-                    <p className="text-neutral-500">Rain Chance</p>
-                    <p className="font-medium">{weather.rain_chance}%</p>
-                  </div>
-                </div>
-                <Link 
-                  to="/weather" 
-                  className="text-primary-500 text-sm hover:underline mt-4 inline-flex items-center gap-1"
-                >
-                  View Forecast <ArrowRight size={14} />
-                </Link>
-              </div>
-            ) : (
-              <p className="text-neutral-500 text-center py-8">
-                Set your region to see weather
-              </p>
-            )}
-          </Card>
+          <WeatherCard className="lg:col-span-1" />
 
           {/* Recent Orders */}
           <Card className="lg:col-span-2">
@@ -135,7 +147,7 @@ const FarmerDashboard = () => {
             {orderStats?.pending_orders > 0 ? (
               <div className="space-y-3">
                 {/* Placeholder for recent orders */}
-                <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className={`p-4 bg-yellow-50 border border-yellow-200 rounded-lg ${updatedStats.orders ? 'animate-fadeIn' : ''}`}>
                   <p className="text-yellow-800">
                     You have <strong>{orderStats.pending_orders}</strong> pending orders awaiting your response.
                   </p>
@@ -157,9 +169,14 @@ const FarmerDashboard = () => {
         </div>
 
         {/* Buyer Requests */}
-        <Card>
+        <Card className={updatedStats.requests ? 'ring-2 ring-primary-200' : ''}>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="section-title">Buyer Requests Near You</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="section-title">Buyer Requests Near You</h3>
+              {updatedStats.requests && (
+                <span className="live-update-badge">updated just now</span>
+              )}
+            </div>
             <Link to="/buyer-requests" className="text-primary-500 text-sm hover:underline">
               View All
             </Link>
@@ -205,7 +222,7 @@ const FarmerDashboard = () => {
         {/* Quick Actions */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Link to="/prices" className="card hover:border-primary-500 border-2 border-transparent">
-            <TrendingUp size={24} className="text-primary-500 mb-2" />
+            <ShoppingBag size={24} className="text-primary-500 mb-2" />
             <h3 className="font-semibold">Market Prices</h3>
             <p className="text-sm text-neutral-500">Check current crop prices</p>
           </Link>

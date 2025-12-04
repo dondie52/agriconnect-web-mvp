@@ -1,9 +1,11 @@
 /**
  * Auth Controller for AgriConnect
  * Handles user registration, login, and profile management
+ * Uses direct Supabase PostgreSQL queries
  */
 const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+const bcrypt = require('bcryptjs');
+const { query } = require('../config/db');
 
 // Generate JWT token
 const generateToken = (userId, role) => {
@@ -20,35 +22,78 @@ const authController = {
     try {
       const { name, email, phone, password, role = 'farmer', region_id } = req.body;
 
-      // Check if phone already exists
-      const existingUser = await User.findByPhone(phone);
-      if (existingUser) {
+      // Validate required fields
+      if (!name || !name.trim()) {
         return res.status(400).json({
           success: false,
-          message: 'Phone number already registered'
+          message: 'Name is required'
+        });
+      }
+
+      if (!phone || !phone.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number is required'
+        });
+      }
+
+      if (!password || password.length < 6) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password must be at least 6 characters'
+        });
+      }
+
+      if (!role || !['farmer', 'buyer'].includes(role)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Role must be either farmer or buyer'
+        });
+      }
+
+      // Check if phone already exists
+      const existingPhone = await query(
+        'SELECT id FROM users WHERE phone = $1 LIMIT 1',
+        [phone]
+      );
+      
+      if (existingPhone.rows.length > 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'User already exists'
         });
       }
 
       // Check if email already exists (if provided)
       if (email) {
-        const existingEmail = await User.findByEmail(email);
-        if (existingEmail) {
+        const existingEmail = await query(
+          'SELECT id FROM users WHERE email = $1 LIMIT 1',
+          [email]
+        );
+        
+        if (existingEmail.rows.length > 0) {
           return res.status(400).json({
             success: false,
-            message: 'Email already registered'
+            message: 'User already exists'
           });
         }
       }
 
-      // Create user
-      const user = await User.create({
-        name,
-        email,
-        phone,
-        password,
-        role: role === 'admin' ? 'farmer' : role, // Prevent self-registering as admin
-        region_id
-      });
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 12);
+
+      // Sanitize role - prevent self-registering as admin
+      const safeRole = role === 'admin' ? 'farmer' : role;
+
+      // Insert into Supabase
+      const result = await query(
+        `INSERT INTO users (name, email, phone, password, role, region_id)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, name, email, phone, role, region_id`,
+        [name.trim(), email || null, phone.trim(), hashedPassword, safeRole, region_id || null]
+      );
+
+      const user = result.rows[0];
 
       // Generate token
       const token = generateToken(user.id, user.role);
@@ -56,20 +101,35 @@ const authController = {
       res.status(201).json({
         success: true,
         message: 'Registration successful',
-        data: {
-          user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            phone: user.phone,
-            role: user.role,
-            region_id: user.region_id
-          },
-          token
-        }
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          phone: user.phone,
+          role: user.role,
+          region_id: user.region_id
+        },
+        token
       });
     } catch (error) {
       console.error('Registration error:', error);
+      
+      // Handle unique constraint violation
+      if (error.code === '23505') {
+        return res.status(400).json({
+          success: false,
+          message: 'User already exists'
+        });
+      }
+      
+      // Handle Supabase connection errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+        return res.status(503).json({
+          success: false,
+          message: 'Database connection failed. Please try again later.'
+        });
+      }
+
       res.status(500).json({
         success: false,
         message: 'Registration failed. Please try again.'
@@ -82,8 +142,29 @@ const authController = {
     try {
       const { phone, password } = req.body;
 
-      // Find user by phone
-      const user = await User.findByPhone(phone);
+      // Validate required fields
+      if (!phone || !phone.trim()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Phone number is required'
+        });
+      }
+
+      if (!password) {
+        return res.status(400).json({
+          success: false,
+          message: 'Password is required'
+        });
+      }
+
+      // Query Supabase for user
+      const result = await query(
+        'SELECT * FROM users WHERE phone = $1 LIMIT 1',
+        [phone.trim()]
+      );
+
+      const user = result.rows[0];
+
       if (!user) {
         return res.status(401).json({
           success: false,
@@ -92,15 +173,16 @@ const authController = {
       }
 
       // Check if account is active
-      if (!user.is_active) {
+      if (user.is_active === false) {
         return res.status(401).json({
           success: false,
           message: 'Account is suspended. Please contact support.'
         });
       }
 
-      // Verify password
-      const isValidPassword = await User.verifyPassword(password, user.password);
+      // Compare hashed password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      
       if (!isValidPassword) {
         return res.status(401).json({
           success: false,
@@ -128,6 +210,15 @@ const authController = {
       });
     } catch (error) {
       console.error('Login error:', error);
+      
+      // Handle Supabase connection errors
+      if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND' || error.code === 'ETIMEDOUT') {
+        return res.status(503).json({
+          success: false,
+          message: 'Database connection failed. Supabase may be unreachable. Please try again later.'
+        });
+      }
+
       res.status(500).json({
         success: false,
         message: 'Login failed. Please try again.'
@@ -138,8 +229,17 @@ const authController = {
   // Get current user profile
   async getProfile(req, res) {
     try {
-      const user = await User.findById(req.user.id);
+      const result = await query(
+        `SELECT u.id, u.name, u.email, u.phone, u.role, u.region_id, 
+                r.name as region_name, u.is_active, u.created_at
+         FROM users u 
+         LEFT JOIN regions r ON u.region_id = r.id 
+         WHERE u.id = $1`,
+        [req.user.id]
+      );
       
+      const user = result.rows[0];
+
       if (!user) {
         return res.status(404).json({
           success: false,
@@ -176,8 +276,11 @@ const authController = {
 
       // Check if new phone is already taken
       if (phone && phone !== req.user.phone) {
-        const existing = await User.findByPhone(phone);
-        if (existing) {
+        const existing = await query(
+          'SELECT id FROM users WHERE phone = $1 AND id != $2',
+          [phone, req.user.id]
+        );
+        if (existing.rows.length > 0) {
           return res.status(400).json({
             success: false,
             message: 'Phone number already in use'
@@ -187,8 +290,11 @@ const authController = {
 
       // Check if new email is already taken
       if (email) {
-        const existingEmail = await User.findByEmail(email);
-        if (existingEmail && existingEmail.id !== req.user.id) {
+        const existingEmail = await query(
+          'SELECT id FROM users WHERE email = $1 AND id != $2',
+          [email, req.user.id]
+        );
+        if (existingEmail.rows.length > 0) {
           return res.status(400).json({
             success: false,
             message: 'Email already in use'
@@ -196,17 +302,52 @@ const authController = {
         }
       }
 
-      const updatedUser = await User.update(req.user.id, {
-        name,
-        email,
-        phone,
-        region_id
-      });
+      // Build update query dynamically
+      const updates = [];
+      const values = [];
+      let paramCount = 1;
+
+      if (name !== undefined) {
+        updates.push(`name = $${paramCount}`);
+        values.push(name);
+        paramCount++;
+      }
+      if (email !== undefined) {
+        updates.push(`email = $${paramCount}`);
+        values.push(email || null);
+        paramCount++;
+      }
+      if (phone !== undefined) {
+        updates.push(`phone = $${paramCount}`);
+        values.push(phone);
+        paramCount++;
+      }
+      if (region_id !== undefined) {
+        updates.push(`region_id = $${paramCount}`);
+        values.push(region_id || null);
+        paramCount++;
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'No fields to update'
+        });
+      }
+
+      updates.push(`updated_at = NOW()`);
+      values.push(req.user.id);
+
+      const result = await query(
+        `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}
+         RETURNING id, name, email, phone, role, region_id, is_active, created_at, updated_at`,
+        values
+      );
 
       res.json({
         success: true,
         message: 'Profile updated successfully',
-        data: updatedUser
+        data: result.rows[0]
       });
     } catch (error) {
       console.error('Update profile error:', error);
@@ -223,10 +364,20 @@ const authController = {
       const { currentPassword, newPassword } = req.body;
 
       // Get user with password
-      const user = await User.findByPhone(req.user.phone);
+      const userResult = await query(
+        'SELECT password FROM users WHERE id = $1',
+        [req.user.id]
+      );
+
+      if (userResult.rows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found'
+        });
+      }
 
       // Verify current password
-      const isValid = await User.verifyPassword(currentPassword, user.password);
+      const isValid = await bcrypt.compare(currentPassword, userResult.rows[0].password);
       if (!isValid) {
         return res.status(400).json({
           success: false,
@@ -234,8 +385,12 @@ const authController = {
         });
       }
 
-      // Update password
-      await User.updatePassword(req.user.id, newPassword);
+      // Hash and update password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+      await query(
+        'UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2',
+        [hashedPassword, req.user.id]
+      );
 
       res.json({
         success: true,

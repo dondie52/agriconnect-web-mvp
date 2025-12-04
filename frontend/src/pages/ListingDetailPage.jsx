@@ -60,7 +60,13 @@ const ListingDetailPage = () => {
     );
   }
 
-  const images = listing.images ? JSON.parse(listing.images) : [];
+  let images = [];
+  try {
+    images = listing.images ? JSON.parse(listing.images) : [];
+  } catch (e) {
+    // Handle invalid JSON in images field
+    images = [];
+  }
   const isOwner = user?.id === listing.farmer_id;
 
   const handleOrder = async () => {

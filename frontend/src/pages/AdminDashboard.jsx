@@ -1,11 +1,13 @@
 /**
  * Admin Dashboard for AgriConnect
+ * Real-time updates via Supabase Realtime
  */
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useAdminDashboard, useAdminUsers, useUpdatePrice, useCrops, useRegions } from '../hooks/useApi';
+import { useAdminDashboardRealtime } from '../hooks/useRealtime';
 import { Layout } from '../components/Layout';
-import { Card, StatCard, PageLoading, Button, Input, Select, StatusBadge, Modal } from '../components/UI';
-import { Users, ShoppingBag, DollarSign, TrendingUp, UserCheck, UserX } from 'lucide-react';
+import { Card, StatCard, PageLoading, Button, Input, Select, Modal } from '../components/UI';
+import { Users, ShoppingBag, DollarSign, TrendingUp, UserCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AdminDashboard = () => {
@@ -22,6 +24,44 @@ const AdminDashboard = () => {
     price: '',
     unit: 'kg',
   });
+
+  // Track which stats were recently updated for animations
+  const [updatedStats, setUpdatedStats] = useState({});
+  const [lastUpdate, setLastUpdate] = useState(null);
+
+  // Handle real-time updates with visual feedback
+  const handleRealtimeUpdate = useCallback(({ table, payload }) => {
+    const now = new Date();
+    setLastUpdate(now);
+
+    // Mark related stats as updated for pulse animation
+    const statMappings = {
+      users: ['users'],
+      listings: ['listings'],
+      orders: ['orders']
+    };
+
+    const affectedStats = statMappings[table] || [];
+    
+    // Set updated state for each affected stat
+    affectedStats.forEach((stat) => {
+      setUpdatedStats((prev) => ({ ...prev, [stat]: true }));
+    });
+
+    // Clear the animation after 2 seconds
+    setTimeout(() => {
+      setUpdatedStats((prev) => {
+        const newState = { ...prev };
+        affectedStats.forEach((stat) => {
+          delete newState[stat];
+        });
+        return newState;
+      });
+    }, 2000);
+  }, []);
+
+  // Subscribe to real-time updates
+  useAdminDashboardRealtime(handleRealtimeUpdate);
 
   const handleUpdatePrice = async () => {
     if (!priceData.crop_id || !priceData.region_id || !priceData.price) {
@@ -62,43 +102,63 @@ const AdminDashboard = () => {
               Platform overview and management
             </p>
           </div>
-          <Button onClick={() => setPriceModal(true)}>
-            Update Market Prices
-          </Button>
+          <div className="flex items-center gap-3">
+            {lastUpdate && (
+              <span className="live-badge">
+                🟢 Live
+              </span>
+            )}
+            <Button onClick={() => setPriceModal(true)}>
+              Update Market Prices
+            </Button>
+          </div>
         </div>
 
         {/* Overview Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard
-            icon={Users}
-            label="Total Farmers"
-            value={dashboard?.total_farmers || 0}
-            color="primary"
-          />
-          <StatCard
-            icon={UserCheck}
-            label="Total Buyers"
-            value={dashboard?.total_buyers || 0}
-            color="secondary"
-          />
-          <StatCard
-            icon={ShoppingBag}
-            label="Active Listings"
-            value={dashboard?.active_listings || 0}
-            color="success"
-          />
-          <StatCard
-            icon={DollarSign}
-            label="Total Transactions"
-            value={`P${(dashboard?.total_transaction_value || 0).toLocaleString()}`}
-            color="warning"
-          />
+          <div className={updatedStats.users ? 'stat-card-updated' : ''}>
+            <StatCard
+              icon={Users}
+              label="Total Farmers"
+              value={dashboard?.total_farmers || 0}
+              color="primary"
+            />
+          </div>
+          <div className={updatedStats.users ? 'stat-card-updated' : ''}>
+            <StatCard
+              icon={UserCheck}
+              label="Total Buyers"
+              value={dashboard?.total_buyers || 0}
+              color="secondary"
+            />
+          </div>
+          <div className={updatedStats.listings ? 'stat-card-updated' : ''}>
+            <StatCard
+              icon={ShoppingBag}
+              label="Active Listings"
+              value={dashboard?.active_listings || 0}
+              color="success"
+            />
+          </div>
+          <div className={updatedStats.orders ? 'stat-card-updated' : ''}>
+            <StatCard
+              icon={DollarSign}
+              label="Total Transactions"
+              value={`P${(dashboard?.total_transaction_value || 0).toLocaleString()}`}
+              color="warning"
+            />
+          </div>
         </div>
 
         {/* Order Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <h3 className="section-title mb-4">Order Statistics</h3>
+          <Card className={updatedStats.orders ? 'ring-2 ring-primary-200' : ''}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="section-title">Order Statistics</h3>
+              {updatedStats.orders && (
+                <span className="live-update-badge">updated just now</span>
+              )}
+            </div>
             <div className="space-y-4">
               <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
                 <span className="text-yellow-800">Pending Orders</span>
@@ -115,8 +175,13 @@ const AdminDashboard = () => {
             </div>
           </Card>
 
-          <Card>
-            <h3 className="section-title mb-4">User Distribution</h3>
+          <Card className={updatedStats.users ? 'ring-2 ring-primary-200' : ''}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="section-title">User Distribution</h3>
+              {updatedStats.users && (
+                <span className="live-update-badge">updated just now</span>
+              )}
+            </div>
             <div className="space-y-4">
               {dashboard?.user_counts?.map(uc => (
                 <div key={uc.role} className="flex justify-between items-center">
@@ -129,8 +194,13 @@ const AdminDashboard = () => {
         </div>
 
         {/* Recent Users */}
-        <Card>
-          <h3 className="section-title mb-4">Recent Users</h3>
+        <Card className={updatedStats.users ? 'ring-2 ring-primary-200' : ''}>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="section-title">Recent Users</h3>
+            {updatedStats.users && (
+              <span className="live-update-badge">updated just now</span>
+            )}
+          </div>
           
           {loadingUsers ? (
             <div className="flex justify-center py-8">

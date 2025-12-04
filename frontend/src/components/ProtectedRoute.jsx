@@ -7,6 +7,13 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { PageLoading } from './UI';
 
+// Dashboard routes for each role
+const DASHBOARD_ROUTES = {
+  farmer: '/farmer/dashboard',
+  buyer: '/buyer/dashboard',
+  admin: '/admin',
+};
+
 // Protected Route - requires authentication
 export const ProtectedRoute = ({ children, roles = [] }) => {
   const { isAuthenticated, loading, user } = useAuth();
@@ -23,12 +30,7 @@ export const ProtectedRoute = ({ children, roles = [] }) => {
   // Check role if specified
   if (roles.length > 0 && !roles.includes(user.role)) {
     // Redirect to appropriate dashboard based on role
-    const dashboardRoutes = {
-      farmer: '/dashboard',
-      buyer: '/listings',
-      admin: '/admin',
-    };
-    return <Navigate to={dashboardRoutes[user.role] || '/'} replace />;
+    return <Navigate to={DASHBOARD_ROUTES[user.role] || '/'} replace />;
   }
 
   return children;
@@ -43,12 +45,49 @@ export const PublicRoute = ({ children }) => {
   }
 
   if (isAuthenticated) {
-    const dashboardRoutes = {
-      farmer: '/dashboard',
-      buyer: '/listings',
-      admin: '/admin',
-    };
-    return <Navigate to={dashboardRoutes[user.role] || '/'} replace />;
+    return <Navigate to={DASHBOARD_ROUTES[user.role] || '/'} replace />;
+  }
+
+  return children;
+};
+
+// Farmer-only Route
+export const FarmerRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <PageLoading />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login?role=farmer" state={{ from: location }} replace />;
+  }
+
+  if (user.role !== 'farmer') {
+    // Redirect non-farmers to their appropriate dashboard
+    return <Navigate to={DASHBOARD_ROUTES[user.role] || '/'} replace />;
+  }
+
+  return children;
+};
+
+// Buyer-only Route
+export const BuyerRoute = ({ children }) => {
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <PageLoading />;
+  }
+
+  if (!isAuthenticated) {
+    return <Navigate to="/login?role=buyer" state={{ from: location }} replace />;
+  }
+
+  if (user.role !== 'buyer') {
+    // Redirect non-buyers to their appropriate dashboard
+    return <Navigate to={DASHBOARD_ROUTES[user.role] || '/'} replace />;
   }
 
   return children;

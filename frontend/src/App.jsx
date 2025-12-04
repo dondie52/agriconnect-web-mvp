@@ -6,7 +6,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
-import { ProtectedRoute, PublicRoute } from './components/ProtectedRoute';
+import { ProtectedRoute, PublicRoute, FarmerRoute, BuyerRoute } from './components/ProtectedRoute';
 
 // Pages
 import LoginPage from './pages/LoginPage';
@@ -16,6 +16,11 @@ import ListingsPage from './pages/ListingsPage';
 import CreateListingPage from './pages/CreateListingPage';
 import MarketPricesPage from './pages/MarketPricesPage';
 import NotificationsPage from './pages/NotificationsPage';
+import { LandingPage } from './pages/landing';
+import RoleSelectPage from './pages/auth/RoleSelectPage';
+
+// Global Chatbot Widget
+import Chatbot from './components/chatbot';
 
 // Lazy load other pages for better performance
 const MyListingsPage = React.lazy(() => import('./pages/MyListingsPage'));
@@ -53,6 +58,8 @@ function App() {
           <React.Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public Routes */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/role-select" element={<RoleSelectPage />} />
               <Route path="/login" element={
                 <PublicRoute>
                   <LoginPage />
@@ -64,41 +71,62 @@ function App() {
                 </PublicRoute>
               } />
 
+              {/* ==================== */}
               {/* Farmer Routes */}
-              <Route path="/dashboard" element={
-                <ProtectedRoute roles={['farmer']}>
+              {/* ==================== */}
+              <Route path="/farmer/dashboard" element={
+                <FarmerRoute>
                   <FarmerDashboard />
-                </ProtectedRoute>
+                </FarmerRoute>
               } />
-              <Route path="/my-listings" element={
-                <ProtectedRoute roles={['farmer']}>
+              <Route path="/farmer/my-listings" element={
+                <FarmerRoute>
                   <MyListingsPage />
-                </ProtectedRoute>
+                </FarmerRoute>
               } />
-              <Route path="/create-listing" element={
-                <ProtectedRoute roles={['farmer']}>
+              <Route path="/farmer/create-listing" element={
+                <FarmerRoute>
                   <CreateListingPage />
-                </ProtectedRoute>
+                </FarmerRoute>
               } />
-              <Route path="/crop-planner" element={
-                <ProtectedRoute roles={['farmer']}>
+              <Route path="/farmer/crop-planner" element={
+                <FarmerRoute>
                   <CropPlannerPage />
-                </ProtectedRoute>
+                </FarmerRoute>
               } />
-              <Route path="/analytics" element={
-                <ProtectedRoute roles={['farmer']}>
+              <Route path="/farmer/analytics" element={
+                <FarmerRoute>
                   <AnalyticsPage />
-                </ProtectedRoute>
+                </FarmerRoute>
               } />
 
+              {/* Legacy farmer routes - redirect to new paths */}
+              <Route path="/dashboard" element={<Navigate to="/farmer/dashboard" replace />} />
+              <Route path="/my-listings" element={<Navigate to="/farmer/my-listings" replace />} />
+              <Route path="/create-listing" element={<Navigate to="/farmer/create-listing" replace />} />
+              <Route path="/crop-planner" element={<Navigate to="/farmer/crop-planner" replace />} />
+              <Route path="/analytics" element={<Navigate to="/farmer/analytics" replace />} />
+
+              {/* ==================== */}
               {/* Buyer Routes */}
-              <Route path="/create-request" element={
-                <ProtectedRoute roles={['buyer']}>
+              {/* ==================== */}
+              <Route path="/buyer/dashboard" element={
+                <BuyerRoute>
+                  <ListingsPage />
+                </BuyerRoute>
+              } />
+              <Route path="/buyer/create-request" element={
+                <BuyerRoute>
                   <CreateRequestPage />
-                </ProtectedRoute>
+                </BuyerRoute>
               } />
 
+              {/* Legacy buyer routes - redirect to new paths */}
+              <Route path="/create-request" element={<Navigate to="/buyer/create-request" replace />} />
+
+              {/* ==================== */}
               {/* Shared Routes (Farmer & Buyer) */}
+              {/* ==================== */}
               <Route path="/listings" element={
                 <ProtectedRoute>
                   <ListingsPage />
@@ -130,7 +158,9 @@ function App() {
                 </ProtectedRoute>
               } />
 
+              {/* ==================== */}
               {/* Admin Routes */}
+              {/* ==================== */}
               <Route path="/admin" element={
                 <ProtectedRoute roles={['admin']}>
                   <AdminDashboard />
@@ -142,15 +172,20 @@ function App() {
                 </ProtectedRoute>
               } />
 
-              {/* Default Redirect */}
-              <Route path="/" element={<Navigate to="/login" replace />} />
-              
-              {/* 404 */}
+              {/* ==================== */}
+              {/* 404 - Not Found */}
+              {/* ==================== */}
               <Route path="*" element={
-                <div className="min-h-screen flex items-center justify-center">
+                <div className="min-h-screen flex items-center justify-center bg-neutral-50">
                   <div className="text-center">
-                    <h1 className="text-4xl font-bold text-neutral-800 mb-4">404</h1>
-                    <p className="text-neutral-600">Page not found</p>
+                    <h1 className="text-6xl font-bold text-primary-500 mb-4">404</h1>
+                    <p className="text-xl text-neutral-600 mb-6">Page not found</p>
+                    <a 
+                      href="/" 
+                      className="px-6 py-3 bg-primary-500 hover:bg-primary-600 text-white rounded-lg font-medium transition-colors"
+                    >
+                      Return Home
+                    </a>
                   </div>
                 </div>
               } />
@@ -181,6 +216,9 @@ function App() {
             },
           }}
         />
+
+        {/* Global Chatbot Widget - Appears on all pages */}
+        <Chatbot />
       </AuthProvider>
     </QueryClientProvider>
   );
