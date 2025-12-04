@@ -24,8 +24,8 @@ const dashboardController = require('../controllers/dashboardController');
 // Import middleware
 const { auth } = require('../middleware/auth');
 
-// Import database pool and query for test routes
-const { pool, query } = require('../config/db');
+// Import database pool for test routes
+const { pool } = require('../config/db');
 
 // Server start time for uptime calculation
 const serverStartTime = Date.now();
@@ -104,25 +104,6 @@ router.get('/regions', async (req, res) => {
     res.json({ success: true, data: regions });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to fetch regions' });
-  }
-});
-
-// Debug route - list recent users (for testing registration)
-router.get('/debug/users', async (req, res) => {
-  try {
-    const result = await query('SELECT id, name, email, phone, role, region_id, is_active, created_at FROM users ORDER BY id DESC LIMIT 20');
-    res.json({
-      success: true,
-      count: result.rows.length,
-      users: result.rows
-    });
-  } catch (error) {
-    console.error('Debug users error:', error.message);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to fetch users',
-      error: error.message
-    });
   }
 });
 

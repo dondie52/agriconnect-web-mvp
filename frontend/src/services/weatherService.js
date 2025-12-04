@@ -112,3 +112,4 @@ export const getWeather = async (lat, lon) => {
 
 export default { getWeather, getWeatherDescription };
 
+
