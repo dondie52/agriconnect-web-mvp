@@ -1,0 +1,193 @@
+AgriConnect - Project File Structure
+=====================================
+
+agriconnect/
+├── README.md
+├── LICENSE
+├── change.md
+│
+├── backend/
+│   ├── .env
+│   ├── .env.example
+│   ├── package.json
+│   ├── package-lock.json
+│   ├── test-db.js
+│   │
+│   ├── database/
+│   │   └── schema.sql
+│   │
+│   ├── uploads/
+│   │   └── (uploaded files)
+│   │
+│   └── src/
+│       ├── server.js                    # Main entry point
+│       │
+│       ├── ai/                          # AI/Chatbot logic
+│       │   ├── cropAdvisor.js
+│       │   ├── intents.js
+│       │   ├── llmHelper.js
+│       │   ├── responseGenerator.js
+│       │   ├── systemPrompt.js
+│       │   └── weatherTips.js
+│       │
+│       ├── config/
+│       │   └── db.js                    # Database configuration
+│       │
+│       ├── controllers/
+│       │   ├── adminController.js
+│       │   ├── aiController.js
+│       │   ├── analyticsController.js
+│       │   ├── authController.js
+│       │   ├── buyerRequestController.js
+│       │   ├── chatController.js
+│       │   ├── cropPlanController.js
+│       │   ├── dashboardController.js
+│       │   ├── listingController.js
+│       │   ├── notificationController.js
+│       │   ├── orderController.js
+│       │   ├── priceController.js
+│       │   └── weatherController.js
+│       │
+│       ├── middleware/
+│       │   ├── auth.js
+│       │   ├── upload.js
+│       │   └── validation.js
+│       │
+│       ├── models/
+│       │   ├── Analytics.js
+│       │   ├── BuyerRequest.js
+│       │   ├── CropPlan.js
+│       │   ├── CropRegion.js
+│       │   ├── Listing.js
+│       │   ├── Notification.js
+│       │   ├── Order.js
+│       │   ├── Price.js
+│       │   └── User.js
+│       │
+│       ├── routes/
+│       │   ├── index.js
+│       │   ├── admin.js
+│       │   ├── aiRoutes.js
+│       │   ├── analytics.js
+│       │   ├── auth.js
+│       │   ├── chatRoutes.js
+│       │   ├── cropPlans.js
+│       │   ├── listings.js
+│       │   ├── notifications.js
+│       │   ├── orders.js
+│       │   ├── prices.js
+│       │   ├── requests.js
+│       │   └── weather.js
+│       │
+│       ├── services/
+│       │   └── weatherService.js
+│       │
+│       └── utils/
+│           ├── migrate.js
+│           └── seed.js
+│
+└── frontend/
+    ├── .env
+    ├── .env.example
+    ├── package.json
+    ├── package-lock.json
+    ├── postcss.config.js
+    ├── tailwind.config.js
+    │
+    ├── public/
+    │   ├── index.html
+    │   ├── favicon.svg
+    │   └── founder.jpg
+    │
+    └── src/
+        ├── index.js                     # Main entry point
+        ├── App.jsx                      # Root component
+        │
+        ├── api/
+        │   └── index.js                 # API client/axios config
+        │
+        ├── components/
+        │   ├── Layout.jsx
+        │   ├── ProtectedRoute.jsx
+        │   ├── UI.jsx
+        │   ├── WeatherCard.jsx
+        │   │
+        │   ├── chatbot/
+        │   │   ├── index.js
+        │   │   ├── Chatbot.jsx
+        │   │   ├── ChatbotButton.jsx
+        │   │   ├── ChatWindow.jsx
+        │   │   └── chatbot.css
+        │   │
+        │   └── weather/
+        │       └── AiTipsCard.jsx
+        │
+        ├── context/
+        │   └── AuthContext.jsx
+        │
+        ├── hooks/
+        │   ├── useAiTips.js
+        │   ├── useApi.js
+        │   ├── useRealtime.js
+        │   └── useWeather.js
+        │
+        ├── lib/
+        │   └── supabase.js
+        │
+        ├── pages/
+        │   ├── AdminDashboard.jsx
+        │   ├── AnalyticsPage.jsx
+        │   ├── BuyerRequestsPage.jsx
+        │   ├── CreateListingPage.jsx
+        │   ├── CreateRequestPage.jsx
+        │   ├── CropPlannerPage.jsx
+        │   ├── EditListingPage.jsx
+        │   ├── FarmerDashboard.jsx
+        │   ├── ListingDetailPage.jsx
+        │   ├── ListingsPage.jsx
+        │   ├── LoginPage.jsx
+        │   ├── MarketPricesPage.jsx
+        │   ├── MyListingsPage.jsx
+        │   ├── NotificationsPage.jsx
+        │   ├── RegisterPage.jsx
+        │   ├── WeatherPage.jsx
+        │   │
+        │   ├── auth/
+        │   │   └── RoleSelectPage.jsx
+        │   │
+        │   ├── info/
+        │   │   ├── index.js
+        │   │   ├── AboutPage.jsx
+        │   │   ├── CareersPage.jsx
+        │   │   ├── CommunityPage.jsx
+        │   │   ├── CookiesPage.jsx
+        │   │   ├── FAQPage.jsx
+        │   │   ├── HelpCenterPage.jsx
+        │   │   ├── HowItWorksPage.jsx
+        │   │   ├── MissionPage.jsx
+        │   │   ├── PressPage.jsx
+        │   │   ├── PrivacyPage.jsx
+        │   │   ├── SafetyPage.jsx
+        │   │   ├── SellerGuidePage.jsx
+        │   │   ├── SuccessStoriesPage.jsx
+        │   │   ├── TermsPage.jsx
+        │   │   └── USSDGuidePage.jsx
+        │   │
+        │   └── landing/
+        │       ├── index.js
+        │       ├── LandingPage.jsx
+        │       ├── CategoriesSection.jsx
+        │       ├── CTABanner.jsx
+        │       ├── FeaturedCarousel.jsx
+        │       ├── Footer.jsx
+        │       ├── Hero.jsx
+        │       ├── Navbar.jsx
+        │       ├── ProductGrid.jsx
+        │       ├── QuickActions.jsx
+        │       └── Testimonials.jsx
+        │
+        ├── services/
+        │   └── weatherService.js
+        │
+        └── styles/
+            └── index.css
