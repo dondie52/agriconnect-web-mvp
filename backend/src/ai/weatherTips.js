@@ -32,3 +32,4 @@ module.exports = function weatherTips(weather) {
   return tips.join(" ");
 };
 
+

@@ -222,3 +222,4 @@ const CookiesPage = () => {
 
 export default CookiesPage;
 
+

@@ -216,3 +216,4 @@ const SafetyPage = () => {
 
 export default SafetyPage;
 
+

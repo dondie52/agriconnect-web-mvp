@@ -43,3 +43,4 @@ module.exports = async function generateAIResponse(userMessage, context = {}) {
   }
 };
 
+

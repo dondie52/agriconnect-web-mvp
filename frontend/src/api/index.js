@@ -3,8 +3,14 @@
  */
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-export const UPLOAD_URL = process.env.REACT_APP_UPLOAD_URL || 'http://localhost:5000/uploads';
+// Read API URL from Vite environment variables
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL || 'http://localhost:5000/uploads';
+
+// Warn if environment variables are missing
+if (!import.meta.env.VITE_API_URL) {
+  console.warn('Missing VITE_API_URL environment variable. Using default: http://localhost:5000/api');
+}
 
 // Create axios instance
 const api = axios.create({

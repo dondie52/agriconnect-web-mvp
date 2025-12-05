@@ -25,3 +25,4 @@ module.exports = function cropAdvisor(message) {
   return "Dry season — focus on irrigation crops like tomatoes, cabbage, spinach, and onions.";
 };
 
+
