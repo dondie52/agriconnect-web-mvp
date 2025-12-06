@@ -51,6 +51,9 @@ const WeatherPage = React.lazy(() => import('./pages/WeatherPage'));
 const CropPlannerPage = React.lazy(() => import('./pages/CropPlannerPage'));
 const AnalyticsPage = React.lazy(() => import('./pages/AnalyticsPage'));
 const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
+const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
+const MyOrdersPage = React.lazy(() => import('./pages/MyOrdersPage'));
+const MyRequestsPage = React.lazy(() => import('./pages/MyRequestsPage'));
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -170,8 +173,22 @@ function App() {
                 </BuyerRoute>
               } />
 
+              {/* Buyer Orders and Requests */}
+              <Route path="/buyer/my-orders" element={
+                <BuyerRoute>
+                  <MyOrdersPage />
+                </BuyerRoute>
+              } />
+              <Route path="/buyer/my-requests" element={
+                <BuyerRoute>
+                  <MyRequestsPage />
+                </BuyerRoute>
+              } />
+
               {/* Legacy buyer routes - redirect to new paths */}
               <Route path="/create-request" element={<Navigate to="/buyer/create-request" replace />} />
+              <Route path="/my-orders" element={<Navigate to="/buyer/my-orders" replace />} />
+              <Route path="/my-requests" element={<Navigate to="/buyer/my-requests" replace />} />
 
               {/* ==================== */}
               {/* Shared Routes (Farmer & Buyer) */}
@@ -204,6 +221,11 @@ function App() {
               <Route path="/weather" element={
                 <ProtectedRoute>
                   <WeatherPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <ProfilePage />
                 </ProtectedRoute>
               } />
 

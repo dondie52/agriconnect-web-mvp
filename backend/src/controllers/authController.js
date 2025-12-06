@@ -203,7 +203,8 @@ const authController = {
             email: user.email,
             phone: user.phone,
             role: user.role,
-            region_id: user.region_id
+            region_id: user.region_id,
+            profile_photo: user.profile_photo
           },
           token
         }
@@ -231,7 +232,7 @@ const authController = {
     try {
       const result = await query(
         `SELECT u.id, u.name, u.email, u.phone, u.role, u.region_id, 
-                r.name as region_name, u.is_active, u.created_at
+                r.name as region_name, u.profile_photo, u.is_active, u.created_at
          FROM users u 
          LEFT JOIN regions r ON u.region_id = r.id 
          WHERE u.id = $1`,
@@ -257,6 +258,7 @@ const authController = {
           role: user.role,
           region_id: user.region_id,
           region_name: user.region_name,
+          profile_photo: user.profile_photo,
           created_at: user.created_at
         }
       });
@@ -354,6 +356,40 @@ const authController = {
       res.status(500).json({
         success: false,
         message: 'Failed to update profile'
+      });
+    }
+  },
+
+  // Upload profile photo
+  async uploadProfilePhoto(req, res) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'No image file provided'
+        });
+      }
+
+      const photoUrl = `/uploads/${req.file.filename}`;
+
+      // Update user's profile photo
+      const result = await query(
+        `UPDATE users SET profile_photo = $1, updated_at = NOW() 
+         WHERE id = $2
+         RETURNING id, name, email, phone, role, region_id, profile_photo, is_active, created_at`,
+        [photoUrl, req.user.id]
+      );
+
+      res.json({
+        success: true,
+        message: 'Profile photo updated successfully',
+        data: result.rows[0]
+      });
+    } catch (error) {
+      console.error('Upload profile photo error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to upload profile photo'
       });
     }
   },

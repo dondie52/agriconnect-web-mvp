@@ -5,6 +5,7 @@ import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useUnreadCount } from '../hooks/useApi';
+import { UPLOAD_URL } from '../api';
 import {
   Home,
   ShoppingBag,
@@ -22,6 +23,13 @@ import {
   Settings,
   Search
 } from 'lucide-react';
+
+// Helper to get full photo URL
+const getPhotoUrl = (photo) => {
+  if (!photo) return null;
+  if (photo.startsWith('http')) return photo;
+  return `${UPLOAD_URL.replace('/uploads', '')}${photo}`;
+};
 
 // Sidebar Navigation Component
 export const Sidebar = ({ isOpen, onClose }) => {
@@ -47,10 +55,10 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const buyerLinks = [
     { to: '/listings', icon: ShoppingBag, label: 'Browse Listings' },
-    { to: '/my-orders', icon: Home, label: 'My Orders' },
+    { to: '/buyer/my-orders', icon: Home, label: 'My Orders' },
     { to: '/prices', icon: TrendingUp, label: 'Market Prices' },
-    { to: '/create-request', icon: PlusCircle, label: 'Post Request' },
-    { to: '/my-requests', icon: Search, label: 'My Requests' },
+    { to: '/buyer/create-request', icon: PlusCircle, label: 'Post Request' },
+    { to: '/buyer/my-requests', icon: Search, label: 'My Requests' },
   ];
 
   const adminLinks = [
@@ -114,15 +122,28 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
         {/* User Info & Logout */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t bg-white">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-              <User size={20} className="text-primary-600" />
+          <Link
+            to="/profile"
+            onClick={onClose}
+            className="flex items-center gap-3 mb-4 p-2 -m-2 rounded-lg hover:bg-neutral-50 transition-colors cursor-pointer"
+          >
+            <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+              {user?.profile_photo ? (
+                <img 
+                  src={getPhotoUrl(user.profile_photo)} 
+                  alt={user?.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={20} className="text-primary-600" />
+              )}
             </div>
-            <div>
+            <div className="flex-1">
               <p className="font-medium text-neutral-800 text-sm">{user?.name}</p>
               <p className="text-xs text-neutral-500 capitalize">{user?.role}</p>
             </div>
-          </div>
+            <span className="text-xs text-primary-600">View Profile</span>
+          </Link>
           <button
             onClick={handleLogout}
             className="flex items-center gap-2 text-red-500 hover:text-red-600 text-sm font-medium"
@@ -181,12 +202,20 @@ export const Header = ({ onMenuClick }) => {
           </button>
 
           {/* User menu (desktop) */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
-              <User size={18} className="text-primary-600" />
+          <Link to="/profile" className="hidden md:flex items-center gap-2 hover:opacity-80 transition-opacity">
+            <div className="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center overflow-hidden">
+              {user?.profile_photo ? (
+                <img 
+                  src={getPhotoUrl(user.profile_photo)} 
+                  alt={user?.name}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <User size={18} className="text-primary-600" />
+              )}
             </div>
             <span className="text-sm font-medium text-neutral-700">{user?.name}</span>
-          </div>
+          </Link>
         </div>
       </div>
     </header>

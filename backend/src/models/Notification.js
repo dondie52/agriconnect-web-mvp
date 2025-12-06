@@ -109,8 +109,36 @@ const Notification = {
     ORDER_COMPLETED: 'order_completed',
     NEW_REQUEST: 'new_request',
     PRICE_UPDATE: 'price_update',
+    PRICE_ALERT: 'price_alert',
     WEATHER_ALERT: 'weather_alert',
     SYSTEM: 'system'
+  },
+
+  // Create price alert notification for significant price changes
+  async notifyPriceAlert(farmer_id, crop_name, region_name, changePercent, newPrice, oldPrice) {
+    const direction = changePercent > 0 ? 'increased' : 'decreased';
+    const formattedChange = `${changePercent > 0 ? '+' : ''}${changePercent.toFixed(1)}%`;
+    const advice = changePercent > 0 
+      ? 'Consider selling now to maximize profits!' 
+      : 'Consider holding stock until prices recover.';
+    
+    return this.create({
+      user_id: farmer_id,
+      type: this.types.PRICE_ALERT,
+      title: `📊 ${crop_name} Price Alert`,
+      message: `${crop_name} price in ${region_name} has ${direction} by ${formattedChange}. ` +
+        `Old: P${oldPrice.toFixed(2)} → New: P${newPrice.toFixed(2)}/kg. ${advice}`,
+      reference_id: null,
+      reference_type: 'price'
+    });
+  },
+
+  // Bulk create price alerts for all farmers
+  async notifyAllFarmersPriceAlert(farmer_ids, crop_name, region_name, changePercent, newPrice, oldPrice) {
+    const notifications = farmer_ids.map(farmer_id => 
+      this.notifyPriceAlert(farmer_id, crop_name, region_name, changePercent, newPrice, oldPrice)
+    );
+    return Promise.all(notifications);
   },
 
   // Create order notification for farmer

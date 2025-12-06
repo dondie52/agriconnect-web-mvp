@@ -214,6 +214,30 @@ export const usePrices = (params) => {
   });
 };
 
+export const useLatestPrices = (params) => {
+  return useQuery({
+    queryKey: ['latestPrices', params],
+    queryFn: async () => {
+      const response = await pricesAPI.getLatest(params);
+      return response.data;
+    },
+    refetchInterval: 15000, // Auto-refresh every 15 seconds for live updates
+    staleTime: 10000,       // Consider fresh for 10 seconds
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const usePriceSyncStatus = () => {
+  return useQuery({
+    queryKey: ['priceSyncStatus'],
+    queryFn: async () => {
+      const response = await pricesAPI.getSyncStatus();
+      return response.data.data;
+    },
+    refetchInterval: 300000, // Refresh every 5 minutes
+  });
+};
+
 export const useUpdatePrice = () => {
   const queryClient = useQueryClient();
   

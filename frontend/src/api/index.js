@@ -1,16 +1,20 @@
 /**
  * API Configuration for AgriConnect Frontend
+ * Production-ready with WebSocket support for real-time updates
  */
 import axios from 'axios';
 
-// Read API URL from Vite environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
-export const UPLOAD_URL = import.meta.env.VITE_UPLOAD_URL || 'http://localhost:5000/uploads';
+// Read API URL from environment variables (Create React App uses REACT_APP_ prefix)
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+export const UPLOAD_URL = process.env.REACT_APP_UPLOAD_URL || 'http://localhost:5000/uploads';
 
-// Warn if environment variables are missing
-if (!import.meta.env.VITE_API_URL) {
-  console.warn('Missing VITE_API_URL environment variable. Using default: http://localhost:5000/api');
-}
+// Base URL without /api suffix (for WebSocket connections)
+export const API_BASE_URL = process.env.REACT_APP_API_URL 
+  ? process.env.REACT_APP_API_URL.replace('/api', '')
+  : 'http://localhost:5000';
+
+// WebSocket URL for live price updates
+export const WS_URL = API_BASE_URL.replace(/^http/, 'ws') + '/live/prices';
 
 // Create axios instance
 const api = axios.create({
@@ -54,6 +58,9 @@ export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   getProfile: () => api.get('/auth/profile'),
   updateProfile: (data) => api.put('/auth/profile', data),
+  uploadProfilePhoto: (formData) => api.post('/auth/profile/photo', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' }
+  }),
   changePassword: (data) => api.put('/auth/change-password', data),
 };
 
@@ -86,10 +93,13 @@ export const ordersAPI = {
 // Prices API
 export const pricesAPI = {
   getAll: (params) => api.get('/prices', { params }),
+  getLatest: (params) => api.get('/prices/latest', { params }),
+  getSyncStatus: () => api.get('/prices/sync-status'),
   getByCrop: (cropId) => api.get(`/prices/crop/${cropId}`),
   getByRegion: (regionId) => api.get(`/prices/region/${regionId}`),
   upsert: (data) => api.post('/prices', data),
   bulkUpsert: (data) => api.post('/prices/bulk', data),
+  triggerSync: () => api.post('/prices/sync'),
 };
 
 // Requests API (Buyer Requests)

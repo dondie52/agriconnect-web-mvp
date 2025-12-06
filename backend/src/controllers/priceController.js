@@ -3,8 +3,144 @@
  * Handles market price operations
  */
 const Price = require('../models/Price');
+const priceCache = require('../services/priceCache');
+const { getSyncStatus, syncMarketPrices } = require('../services/marketPriceSyncService');
 
 const priceController = {
+  // Get latest prices with caching (public) - optimized endpoint
+  async getLatest(req, res) {
+    try {
+      const { crop, region, crop_id, region_id } = req.query;
+      
+      const params = { crop, region, crop_id, region_id };
+      
+      // Check cache first
+      const cached = priceCache.get(params);
+      if (cached) {
+        return res.json({
+          success: true,
+          data: cached.data,
+          cached: true,
+          cachedAt: cached.cachedAt,
+          lastSync: cached.lastSync
+        });
+      }
+      
+      // Build query with filters
+      let whereClause = [];
+      let values = [];
+      let paramCount = 1;
+      
+      if (crop) {
+        whereClause.push(`LOWER(c.name) LIKE LOWER($${paramCount})`);
+        values.push(`%${crop}%`);
+        paramCount++;
+      }
+      
+      if (region) {
+        whereClause.push(`LOWER(r.name) LIKE LOWER($${paramCount})`);
+        values.push(`%${region}%`);
+        paramCount++;
+      }
+      
+      if (crop_id) {
+        whereClause.push(`p.crop_id = $${paramCount}`);
+        values.push(parseInt(crop_id));
+        paramCount++;
+      }
+      
+      if (region_id) {
+        whereClause.push(`p.region_id = $${paramCount}`);
+        values.push(parseInt(region_id));
+        paramCount++;
+      }
+      
+      const where = whereClause.length > 0 ? 'WHERE ' + whereClause.join(' AND ') : '';
+      
+      const { query } = require('../config/db');
+      const result = await query(
+        `SELECT 
+          p.id,
+          c.name as crop,
+          r.name as region,
+          p.price,
+          p.unit,
+          p.previous_price,
+          p.updated_at,
+          CASE 
+            WHEN p.previous_price IS NOT NULL AND p.previous_price > 0 
+            THEN CONCAT(
+              CASE WHEN (p.price - p.previous_price) >= 0 THEN '+' ELSE '' END,
+              ROUND(((p.price - p.previous_price) / p.previous_price * 100)::numeric, 1),
+              '%'
+            )
+            ELSE '0%'
+          END as change,
+          c.category as crop_category
+        FROM prices p
+        JOIN crops c ON p.crop_id = c.id
+        JOIN regions r ON p.region_id = r.id
+        ${where}
+        ORDER BY c.category, c.name, r.name`,
+        values
+      );
+      
+      const data = result.rows;
+      const syncStatus = getSyncStatus();
+      
+      // Store in cache
+      priceCache.set(params, data);
+      
+      res.json({
+        success: true,
+        data,
+        cached: false,
+        lastSync: syncStatus.lastSync
+      });
+    } catch (error) {
+      console.error('Get latest prices error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch latest prices'
+      });
+    }
+  },
+
+  // Trigger manual sync (admin only)
+  async triggerSync(req, res) {
+    try {
+      const stats = await syncMarketPrices();
+      res.json({
+        success: true,
+        message: 'Price sync completed',
+        data: stats
+      });
+    } catch (error) {
+      console.error('Trigger sync error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to sync prices'
+      });
+    }
+  },
+
+  // Get sync status
+  async getSyncStatus(req, res) {
+    try {
+      const status = getSyncStatus();
+      res.json({
+        success: true,
+        data: status
+      });
+    } catch (error) {
+      console.error('Get sync status error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get sync status'
+      });
+    }
+  },
+
   // Get all prices (public)
   async getAll(req, res) {
     try {
