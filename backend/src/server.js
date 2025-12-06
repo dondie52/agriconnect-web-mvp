@@ -193,19 +193,22 @@ const broadcastPriceUpdate = (data) => {
 module.exports.broadcastPriceUpdate = broadcastPriceUpdate;
 
 const startServer = async () => {
+  // Test database connection
+  const { testConnection } = require('./config/db');
   try {
-    // Test database connection
-    const { testConnection } = require('./config/db');
     await testConnection();
     console.log('✅ Database connection successful');
+  } catch (err) {
+    console.error('❌ Database connection failed:', err.message);
+  }
 
-    // Start the scheduler for periodic tasks
-    const scheduler = require('./services/scheduler');
-    scheduler.start();
-    console.log('✅ Scheduler started (market prices sync every 3 hours)');
+  // Start the scheduler for periodic tasks
+  const scheduler = require('./services/scheduler');
+  scheduler.start();
+  console.log('✅ Scheduler started (market prices sync every 3 hours)');
 
-    server.listen(PORT, () => {
-      console.log(`
+  server.listen(PORT, () => {
+    console.log(`
 🌿 AgriConnect Botswana API Server
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 🚀 Server running on port ${PORT}
@@ -214,12 +217,8 @@ const startServer = async () => {
 📁 Uploads: http://localhost:${PORT}/uploads
 🔌 WebSocket: ws://localhost:${PORT}/live/prices
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      `);
-    });
-  } catch (error) {
-    console.error('❌ Database connection failed:', error.message);
-    process.exit(1);
-  }
+    `);
+  });
 };
 
 startServer();
