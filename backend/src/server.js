@@ -77,11 +77,7 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Root-level health check (required by Railway/Vercel/DigitalOcean)
 app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    service: 'agriconnect-api'
-  });
+  res.status(200).json({ status: 'ok' });
 });
 
 // API routes
@@ -143,7 +139,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3000;
 
 // Create HTTP server (required for WebSocket)
 const server = http.createServer(app);

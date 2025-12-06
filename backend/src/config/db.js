@@ -54,7 +54,7 @@ const pool = new Pool(poolConfig);
 
 // Log successful connection
 pool.on('connect', () => {
-  console.log('✅ Connected to PostgreSQL database');
+  console.log('Connected successfully to database');
 });
 
 // Handle connection errors
@@ -106,11 +106,11 @@ const getClient = async () => {
 const testConnection = async () => {
   try {
     const result = await pool.query('SELECT NOW()');
-    console.log('✅ Database connection test successful');
-    console.log('📅 Server time:', result.rows[0].now);
+    console.log('Connected successfully to database');
+    console.log('Server time:', result.rows[0].now);
     return { success: true, time: result.rows[0].now };
   } catch (error) {
-    console.error('❌ Database connection test failed:', error.message);
+    console.error('Database connection test failed:', error.message);
     throw error;
   }
 };
