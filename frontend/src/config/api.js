@@ -14,12 +14,17 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL
 // WebSocket URL for live price updates
 export const WS_URL = API_BASE_URL.replace(/^http/, 'ws') + '/live/prices';
 
-// Log API configuration in development
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔗 API Configuration:', {
-    API_URL,
-    UPLOAD_URL,
-    API_BASE_URL,
-    WS_URL
-  });
+// Log API configuration (always log to help debug)
+console.log('🔗 API Configuration:', {
+  API_URL,
+  UPLOAD_URL,
+  API_BASE_URL,
+  WS_URL,
+  'REACT_APP_API_URL from env': process.env.REACT_APP_API_URL || 'NOT SET - using fallback',
+  'NODE_ENV': process.env.NODE_ENV
+});
+
+// Warn if using localhost fallback in production
+if (!process.env.REACT_APP_API_URL && process.env.NODE_ENV === 'production') {
+  console.warn('⚠️ WARNING: REACT_APP_API_URL not set! Using localhost fallback. This will not work in production.');
 }

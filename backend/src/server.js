@@ -26,9 +26,39 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration - permissive for debugging (restrict in production later)
+// CORS configuration - allow frontend origins
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+  : ['http://localhost:3000', 'http://localhost:3001'];
+
 const corsOptions = {
-  origin: true, // Reflects the requesting origin - works with credentials
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    // Allow if origin is in allowed list or matches pattern
+    if (allowedOrigins.some(allowed => origin.includes(allowed.replace(/^https?:\/\//, '')))) {
+      return callback(null, true);
+    }
+    
+    // In development, allow all origins
+    if (process.env.NODE_ENV !== 'production') {
+      return callback(null, true);
+    }
+    
+    // Otherwise, check if origin matches allowed patterns
+    const isAllowed = allowedOrigins.some(allowed => {
+      try {
+        const allowedUrl = new URL(allowed);
+        const originUrl = new URL(origin);
+        return allowedUrl.origin === originUrl.origin;
+      } catch {
+        return origin.includes(allowed);
+      }
+    });
+    
+    callback(isAllowed ? null : new Error('Not allowed by CORS'), isAllowed);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
@@ -53,6 +83,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
+// Serve frontend static files (for single ngrok tunnel setup)
+const frontendBuildPath = path.join(__dirname, '../../frontend/build');
+app.use(express.static(frontendBuildPath));
+
 // Root-level health check (required by Railway/Vercel/DigitalOcean)
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'ok' });
@@ -72,12 +106,25 @@ app.get('/', (req, res) => {
   });
 });
 
-// 404 handler
+// Serve frontend for all non-API routes (SPA catch-all)
+const frontendIndex = path.join(__dirname, '../../frontend/build/index.html');
+app.get('*', (req, res, next) => {
+  // Skip API routes
+  if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/live')) {
+    return next();
+  }
+  res.sendFile(frontendIndex);
+});
+
+// 404 handler for API routes only
 app.use((req, res, next) => {
-  res.status(404).json({
-    success: false,
-    message: 'Endpoint not found'
-  });
+  if (req.path.startsWith('/api')) {
+    return res.status(404).json({
+      success: false,
+      message: 'Endpoint not found'
+    });
+  }
+  next();
 });
 
 // Global error handler
