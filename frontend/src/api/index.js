@@ -3,28 +3,10 @@
  * Production-ready with WebSocket support for real-time updates
  */
 import axios from 'axios';
+import { API_URL, UPLOAD_URL, API_BASE_URL, WS_URL } from '../config/api';
 
-// Read API URL from environment variables (Create React App uses REACT_APP_ prefix)
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-export const UPLOAD_URL = process.env.REACT_APP_UPLOAD_URL || 'http://localhost:5000/uploads';
-
-// Base URL without /api suffix (for WebSocket connections)
-export const API_BASE_URL = process.env.REACT_APP_API_URL 
-  ? process.env.REACT_APP_API_URL.replace('/api', '')
-  : 'http://localhost:5000';
-
-// WebSocket URL for live price updates
-export const WS_URL = API_BASE_URL.replace(/^http/, 'ws') + '/live/prices';
-
-// Log API configuration in development
-if (process.env.NODE_ENV === 'development') {
-  console.log('🔗 API Configuration:', {
-    API_URL,
-    UPLOAD_URL,
-    API_BASE_URL,
-    WS_URL
-  });
-}
+// Re-export for backward compatibility
+export { UPLOAD_URL, API_BASE_URL, WS_URL };
 
 // Create axios instance with CORS credentials support
 const api = axios.create({
@@ -45,7 +27,7 @@ api.interceptors.request.use(
     }
     
     // Log requests in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`📤 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     }
     
@@ -107,14 +89,14 @@ const getErrorMessage = (error) => {
 api.interceptors.response.use(
   (response) => {
     // Log successful responses in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`📥 API Response: ${response.config.url} - ${response.status}`);
     }
     return response;
   },
   (error) => {
     // Log errors in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error('❌ API Error:', {
         url: error.config?.url,
         status: error.response?.status,
