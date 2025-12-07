@@ -26,11 +26,22 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-// CORS configuration
+// CORS configuration - explicitly allow known origins
+const allowedOrigins = [
+  'https://agriconnect-web-mvp.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://localhost:5000',
+  // Add any additional origins from environment variable
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(url => url.trim()) : [])
+];
+
 const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin (mobile apps, Postman, curl, server-to-server)
+    if (!origin) {
+      return callback(null, true);
+    }
     
     // In development, allow localhost on any port
     if (process.env.NODE_ENV !== 'production') {
@@ -39,16 +50,14 @@ const corsOptions = {
       }
     }
     
-    // In production, use configured frontend URL
-    // If FRONTEND_URL is not set, allow all origins (useful for initial deployment)
-    const allowedOrigins = process.env.FRONTEND_URL 
-      ? process.env.FRONTEND_URL.split(',')
-      : null; // null = allow all origins if not configured
-    
-    if (!allowedOrigins || allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    // Check against allowed origins list
+    if (allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      // Log rejected origin for debugging
+      console.warn(`🚫 CORS rejected origin: ${origin}`);
+      console.warn(`   Allowed origins: ${allowedOrigins.join(', ')}`);
+      callback(new Error(`Not allowed by CORS. Origin: ${origin}`));
     }
   },
   credentials: true,
@@ -62,6 +71,25 @@ app.use(cors(corsOptions));
 
 // Handle preflight requests explicitly
 app.options('*', cors(corsOptions));
+
+// CORS error handling middleware - catches CORS rejections and logs details
+app.use((err, req, res, next) => {
+  if (err.message && err.message.includes('CORS')) {
+    console.error(`🚫 CORS Error: ${err.message}`, {
+      origin: req.headers.origin,
+      method: req.method,
+      path: req.path,
+      userAgent: req.headers['user-agent']
+    });
+    return res.status(403).json({
+      success: false,
+      message: 'CORS policy violation - origin not allowed',
+      origin: req.headers.origin,
+      hint: 'If this is a legitimate request, add the origin to FRONTEND_URL environment variable'
+    });
+  }
+  next(err);
+});
 
 // Request logging
 if (process.env.NODE_ENV !== 'test') {

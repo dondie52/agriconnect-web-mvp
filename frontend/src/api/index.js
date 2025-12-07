@@ -16,38 +16,125 @@ export const API_BASE_URL = process.env.REACT_APP_API_URL
 // WebSocket URL for live price updates
 export const WS_URL = API_BASE_URL.replace(/^http/, 'ws') + '/live/prices';
 
-// Create axios instance
+// Log API configuration in development
+if (process.env.NODE_ENV === 'development') {
+  console.log('🔗 API Configuration:', {
+    API_URL,
+    UPLOAD_URL,
+    API_BASE_URL,
+    WS_URL
+  });
+}
+
+// Create axios instance with CORS credentials support
 const api = axios.create({
   baseURL: API_URL,
+  withCredentials: true, // Required for CORS with credentials
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 30000, // 30 second timeout
 });
 
-// Request interceptor - add auth token
+// Request interceptor - add auth token and log in development
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    // Log requests in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📤 API Request: ${config.method?.toUpperCase()} ${config.url}`);
+    }
+    
     return config;
   },
   (error) => {
+    console.error('❌ Request error:', error.message);
     return Promise.reject(error);
   }
 );
 
-// Response interceptor - handle errors
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // Token expired or invalid
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+// Helper function to get user-friendly error message
+const getErrorMessage = (error) => {
+  // Network error (no response from server)
+  if (!error.response) {
+    if (error.code === 'ECONNABORTED') {
+      return 'Request timed out. Please check your internet connection and try again.';
     }
+    if (error.message === 'Network Error') {
+      return 'Unable to connect to server. Please check your internet connection.';
+    }
+    return 'Connection failed. Please try again later.';
+  }
+  
+  // CORS error
+  if (error.response.status === 403 && error.response.data?.message?.includes('CORS')) {
+    return 'Access denied. Please refresh the page and try again.';
+  }
+  
+  // Server provided error message
+  if (error.response.data?.message) {
+    return error.response.data.message;
+  }
+  
+  // Fallback based on status code
+  switch (error.response.status) {
+    case 400:
+      return 'Invalid request. Please check your input and try again.';
+    case 401:
+      return 'Session expired. Please log in again.';
+    case 403:
+      return 'Access denied. You do not have permission for this action.';
+    case 404:
+      return 'Resource not found.';
+    case 429:
+      return 'Too many requests. Please wait a moment and try again.';
+    case 500:
+      return 'Server error. Please try again later.';
+    case 502:
+    case 503:
+    case 504:
+      return 'Service temporarily unavailable. Please try again in a few minutes.';
+    default:
+      return 'An unexpected error occurred. Please try again.';
+  }
+};
+
+// Response interceptor - handle errors with better messages
+api.interceptors.response.use(
+  (response) => {
+    // Log successful responses in development
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`📥 API Response: ${response.config.url} - ${response.status}`);
+    }
+    return response;
+  },
+  (error) => {
+    // Log errors in development
+    if (process.env.NODE_ENV === 'development') {
+      console.error('❌ API Error:', {
+        url: error.config?.url,
+        status: error.response?.status,
+        message: error.message,
+        data: error.response?.data
+      });
+    }
+    
+    if (error.response?.status === 401) {
+      // Token expired or invalid - only redirect if not already on login page
+      if (!window.location.pathname.includes('/login')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
+    }
+    
+    // Attach user-friendly message to error
+    error.userMessage = getErrorMessage(error);
+    
     return Promise.reject(error);
   }
 );
