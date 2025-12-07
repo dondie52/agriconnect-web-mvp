@@ -166,3 +166,6 @@ WEATHER_API_KEY=...
 # Frontend
 FRONTEND_URL=http://localhost:3000
 ```
+
+
+

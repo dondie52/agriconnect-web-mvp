@@ -241,3 +241,6 @@ The Market Prices page shows connection status:
 - [ ] WebSocket connects at `/live/prices`
 - [ ] Market Prices page shows LIVE/STREAMING badge
 - [ ] Price updates appear in real-time
+
+
+

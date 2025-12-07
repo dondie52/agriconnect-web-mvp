@@ -152,3 +152,6 @@ if (require.main === module) {
 
 module.exports = { seedPrices, generatePrice, CROP_PRICES, REGION_MODIFIERS };
 
+
+
+
