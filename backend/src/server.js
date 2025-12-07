@@ -28,7 +28,7 @@ app.use(helmet({
 
 // CORS configuration - permissive for debugging (restrict in production later)
 const corsOptions = {
-  origin: "*", // Allow all origins for debugging
+  origin: true, // Reflects the requesting origin - works with credentials
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
