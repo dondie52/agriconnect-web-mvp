@@ -27,7 +27,7 @@ api.interceptors.request.use(
     }
     
     // Log requests in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`📤 API Request: ${config.method?.toUpperCase()} ${config.url}`);
     }
     
@@ -89,14 +89,14 @@ const getErrorMessage = (error) => {
 api.interceptors.response.use(
   (response) => {
     // Log successful responses in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.log(`📥 API Response: ${response.config.url} - ${response.status}`);
     }
     return response;
   },
   (error) => {
     // Log errors in development
-    if (process.env.NODE_ENV === 'development') {
+    if (import.meta.env.DEV) {
       console.error('❌ API Error:', {
         url: error.config?.url,
         status: error.response?.status,

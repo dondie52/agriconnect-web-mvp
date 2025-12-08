@@ -182,3 +182,108 @@ const {
   pollingInterval: 15000
 });
 ```
+
+---
+
+# CRA to Vite Migration
+
+**Author:** Claude (Cursor AI Assistant)  
+**Date:** December 8, 2025
+
+## Overview
+Migrated frontend from Create React App (react-scripts) to Vite with strict environment variable validation. All `process.env.REACT_APP_*` references replaced with `import.meta.env.VITE_*`. Removed localhost fallbacks - app now throws on missing required env vars.
+
+## New Files Created
+
+| File | Description |
+|------|-------------|
+| `frontend/vite.config.js` | Vite config with React plugin, path aliases (@, @components, @pages, etc.), port 3000 |
+| `frontend/index.html` | Moved from public/, added `<script type="module" src="/src/main.jsx">` |
+| `frontend/src/main.jsx` | Entry point (renamed from index.js) |
+
+## Modified Files
+
+### Frontend
+
+| File | Changes |
+|------|---------|
+| `package.json` | Removed `react-scripts`, added `vite` + `@vitejs/plugin-react`, updated scripts to `dev`, `build`, `preview`, added `"type": "module"` |
+| `src/config/api.js` | Replaced `process.env.REACT_APP_*` with `import.meta.env.VITE_*`, removed localhost fallbacks, added strict `getEnvVar()` helper that throws on missing |
+| `src/lib/supabase.js` | Uses `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, throws error if missing (no longer returns null client) |
+| `src/test/checkApi.js` | Now imports `API_URL` from config instead of using env directly |
+| `postcss.config.js` → `postcss.config.cjs` | Renamed for ESM compatibility |
+| `tailwind.config.js` → `tailwind.config.cjs` | Renamed for ESM compatibility, updated content path from `public/index.html` to `index.html` |
+| `.env.example` | All vars renamed from `REACT_APP_*` to `VITE_*` |
+
+## Deleted Files
+
+| File | Reason |
+|------|--------|
+| `frontend/public/index.html` | Moved to root |
+| `frontend/src/index.js` | Renamed to main.jsx |
+| `frontend/build/` | Stale CRA build directory |
+
+## NPM Scripts
+
+| Old (CRA) | New (Vite) | Command |
+|-----------|------------|---------|
+| `npm start` | `npm run dev` | Start dev server (port 3000) |
+| `npm run build` | `npm run build` | Production build to `dist/` |
+| - | `npm run preview` | Preview production build |
+
+## Environment Variables
+
+### Required (throws if missing)
+```env
+VITE_API_URL=https://your-api.com/api
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
+```
+
+### Optional
+```env
+VITE_UPLOAD_URL=https://your-api.com/uploads  # defaults to API_URL with /uploads
+```
+
+## Path Aliases (vite.config.js)
+
+```javascript
+'@': './src'
+'@components': './src/components'
+'@pages': './src/pages'
+'@hooks': './src/hooks'
+'@config': './src/config'
+'@lib': './src/lib'
+'@api': './src/api'
+'@context': './src/context'
+'@services': './src/services'
+```
+
+## Breaking Changes
+
+1. **No localhost fallbacks**: App will crash on startup if `VITE_API_URL` is not set
+2. **Supabase required**: App will crash if Supabase env vars are missing (previously returned null client)
+3. **Build output**: Changed from `build/` to `dist/`
+4. **Dev command**: Changed from `npm start` to `npm run dev`
+
+## Testing
+
+```bash
+cd frontend
+
+# Install dependencies (removes 1149 CRA packages, adds 11 Vite packages)
+npm install
+
+# Create .env with required vars
+cp .env.example .env
+# Edit .env with your values
+
+# Run dev server
+npm run dev
+
+# Build for production
+npm run build
+
+# Preview production build
+npm run preview
+```

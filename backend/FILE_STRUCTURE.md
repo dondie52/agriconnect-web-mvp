@@ -1,4 +1,22 @@
-# AgriConnect Backend - File Structure
+# AgriConnect - File Structure
+
+## Project Overview
+
+```
+agriconnect-web-mvp/
+├── backend/                    # Express.js API server
+├── frontend/                   # React + Vite frontend
+├── scripts/                    # Utility scripts
+├── change.md                   # Change log
+├── DEPLOYMENT.md               # Deployment guide
+├── README.md                   # Project readme
+├── LICENSE
+└── railway.json                # Railway deployment config
+```
+
+---
+
+## Backend Structure
 
 ```
 backend/
@@ -12,7 +30,7 @@ backend/
 ├── uploads/                     # User uploaded files (images)
 │
 └── src/
-    ├── server.js                # Main entry point (Express app)
+    ├── server.js                # Main entry point (Express + WebSocket)
     │
     ├── config/
     │   └── db.js                # PostgreSQL connection pool & query helper
@@ -60,7 +78,7 @@ backend/
     │
     ├── services/
     │   ├── marketPriceSyncService.js # FAO API sync + price updates
-    │   ├── priceCache.js             # In-memory price cache (10min TTL)
+    │   ├── priceCache.js             # In-memory price cache (15min TTL)
     │   ├── scheduler.js              # Cron scheduler (3-hour sync)
     │   └── weatherService.js         # Weather API integration
     │
@@ -84,52 +102,128 @@ backend/
         └── seedPrices.js        # Market price seeding script
 ```
 
-## Key Files by Feature
+---
 
-### Market Prices (Live Sync)
+## Frontend Structure (Vite + React)
+
 ```
-src/routes/prices.js              → API endpoints
-src/controllers/priceController.js → Business logic
-src/models/Price.js               → Database queries
-src/services/marketPriceSyncService.js → FAO API sync
-src/services/priceCache.js        → Caching layer
-src/services/scheduler.js         → Cron job (every 3 hours)
+frontend/
+├── package.json                 # Dependencies & Vite scripts
+├── package-lock.json
+├── vite.config.js               # Vite configuration (aliases, port 3000)
+├── index.html                   # Entry HTML (Vite root)
+├── postcss.config.cjs           # PostCSS config (Tailwind)
+├── tailwind.config.cjs          # Tailwind CSS configuration
+├── README_ENV.md                # Environment setup guide
+│
+├── public/                      # Static assets (served as-is)
+│   ├── favicon.svg
+│   └── founder.jpg
+│
+└── src/
+    ├── main.jsx                 # App entry point (React 18 createRoot)
+    ├── App.jsx                  # Root component with routing
+    │
+    ├── api/
+    │   └── index.js             # Axios instance & API endpoints
+    │
+    ├── config/
+    │   └── api.js               # API URL configuration (VITE_* env vars)
+    │
+    ├── lib/
+    │   └── supabase.js          # Supabase client (realtime subscriptions)
+    │
+    ├── context/
+    │   └── AuthContext.jsx      # Authentication context provider
+    │
+    ├── hooks/
+    │   ├── useApi.js            # React Query hooks for API calls
+    │   ├── useAiTips.js         # AI farming tips hook
+    │   ├── useRealtime.js       # Supabase realtime hook
+    │   ├── useRealtimePrices.js # WebSocket + polling price hook
+    │   └── useWeather.js        # Weather data hook
+    │
+    ├── components/
+    │   ├── Layout.jsx           # Main layout wrapper
+    │   ├── ProtectedRoute.jsx   # Auth route guard
+    │   ├── UI.jsx               # Reusable UI components
+    │   ├── WeatherCard.jsx      # Weather display card
+    │   ├── chatbot/
+    │   │   ├── Chatbot.jsx      # Main chatbot component
+    │   │   ├── ChatbotButton.jsx
+    │   │   ├── ChatWindow.jsx
+    │   │   ├── chatbot.css
+    │   │   └── index.js
+    │   └── weather/
+    │       └── AiTipsCard.jsx   # AI weather tips card
+    │
+    ├── pages/
+    │   ├── LoginPage.jsx
+    │   ├── RegisterPage.jsx
+    │   ├── ProfilePage.jsx
+    │   ├── FarmerDashboard.jsx
+    │   ├── AdminDashboard.jsx
+    │   ├── ListingsPage.jsx
+    │   ├── ListingDetailPage.jsx
+    │   ├── CreateListingPage.jsx
+    │   ├── EditListingPage.jsx
+    │   ├── MyListingsPage.jsx
+    │   ├── MyOrdersPage.jsx
+    │   ├── BuyerRequestsPage.jsx
+    │   ├── CreateRequestPage.jsx
+    │   ├── MyRequestsPage.jsx
+    │   ├── MarketPricesPage.jsx
+    │   ├── WeatherPage.jsx
+    │   ├── CropPlannerPage.jsx
+    │   ├── AnalyticsPage.jsx
+    │   ├── NotificationsPage.jsx
+    │   ├── auth/
+    │   │   └── RoleSelectPage.jsx
+    │   ├── landing/
+    │   │   ├── LandingPage.jsx
+    │   │   ├── Hero.jsx
+    │   │   ├── Navbar.jsx
+    │   │   ├── Footer.jsx
+    │   │   ├── ProductGrid.jsx
+    │   │   ├── FeaturedCarousel.jsx
+    │   │   ├── CategoriesSection.jsx
+    │   │   ├── QuickActions.jsx
+    │   │   ├── CTABanner.jsx
+    │   │   ├── Testimonials.jsx
+    │   │   └── index.js
+    │   └── info/
+    │       ├── AboutPage.jsx
+    │       ├── MissionPage.jsx
+    │       ├── HowItWorksPage.jsx
+    │       ├── FAQPage.jsx
+    │       ├── HelpCenterPage.jsx
+    │       ├── TermsPage.jsx
+    │       ├── PrivacyPage.jsx
+    │       ├── CookiesPage.jsx
+    │       ├── SafetyPage.jsx
+    │       ├── SellerGuidePage.jsx
+    │       ├── USSDGuidePage.jsx
+    │       ├── CommunityPage.jsx
+    │       ├── SuccessStoriesPage.jsx
+    │       ├── CareersPage.jsx
+    │       ├── PressPage.jsx
+    │       └── index.js
+    │
+    ├── services/
+    │   └── weatherService.js    # Weather API service
+    │
+    ├── styles/
+    │   └── index.css            # Global styles + Tailwind
+    │
+    └── test/
+        └── checkApi.js          # API connection test utility
 ```
 
-### Authentication
-```
-src/routes/auth.js
-src/controllers/authController.js
-src/models/User.js
-src/middleware/auth.js
-```
-
-### Listings
-```
-src/routes/listings.js
-src/controllers/listingController.js
-src/models/Listing.js
-src/middleware/upload.js
-```
-
-### Orders
-```
-src/routes/orders.js
-src/controllers/orderController.js
-src/models/Order.js
-```
-
-### AI/Chatbot
-```
-src/routes/chatRoutes.js
-src/routes/aiRoutes.js
-src/controllers/chatController.js
-src/controllers/aiController.js
-src/ai/*.js
-```
+---
 
 ## NPM Scripts
 
+### Backend
 ```bash
 npm start          # Start production server
 npm run dev        # Start with nodemon (hot reload)
@@ -139,8 +233,18 @@ npm run migrate    # Run database migrations
 npm test           # Run tests
 ```
 
+### Frontend (Vite)
+```bash
+npm run dev        # Start Vite dev server (port 3000)
+npm run build      # Production build → dist/
+npm run preview    # Preview production build
+```
+
+---
+
 ## Environment Variables
 
+### Backend (.env)
 ```env
 # Database (Supabase or local)
 DATABASE_URL=postgresql://...    # Full connection string
@@ -167,9 +271,78 @@ WEATHER_API_KEY=...
 FRONTEND_URL=http://localhost:3000
 ```
 
+### Frontend (.env)
+```env
+# Required
+VITE_API_URL=http://localhost:5000/api
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-anon-key
 
+# Optional
+VITE_UPLOAD_URL=http://localhost:5000/uploads
+```
 
+---
 
+## Key Features by File
 
+### Market Prices (Live Sync + WebSocket)
+```
+Backend:
+  src/routes/prices.js              → API endpoints
+  src/controllers/priceController.js → Business logic
+  src/models/Price.js               → Database queries
+  src/services/marketPriceSyncService.js → FAO API sync
+  src/services/priceCache.js        → Caching layer (15min TTL)
+  src/services/scheduler.js         → Cron job (every 3 hours)
+  src/server.js                     → WebSocket /live/prices
 
+Frontend:
+  src/pages/MarketPricesPage.jsx    → UI with filters
+  src/hooks/useRealtimePrices.js    → WebSocket + polling hook
+  src/hooks/useApi.js               → useLatestPrices query
+```
 
+### Authentication
+```
+Backend:
+  src/routes/auth.js
+  src/controllers/authController.js
+  src/models/User.js
+  src/middleware/auth.js
+
+Frontend:
+  src/context/AuthContext.jsx
+  src/pages/LoginPage.jsx
+  src/pages/RegisterPage.jsx
+  src/components/ProtectedRoute.jsx
+```
+
+### Listings
+```
+Backend:
+  src/routes/listings.js
+  src/controllers/listingController.js
+  src/models/Listing.js
+  src/middleware/upload.js
+
+Frontend:
+  src/pages/ListingsPage.jsx
+  src/pages/ListingDetailPage.jsx
+  src/pages/CreateListingPage.jsx
+  src/pages/MyListingsPage.jsx
+```
+
+### AI/Chatbot
+```
+Backend:
+  src/routes/chatRoutes.js
+  src/routes/aiRoutes.js
+  src/controllers/chatController.js
+  src/controllers/aiController.js
+  src/ai/*.js
+
+Frontend:
+  src/components/chatbot/*
+  src/hooks/useAiTips.js
+```

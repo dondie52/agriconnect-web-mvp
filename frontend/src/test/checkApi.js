@@ -3,7 +3,7 @@
  * Run this in browser console or as a standalone script
  * Usage: import('./test/checkApi.js') or require('./test/checkApi.js')
  */
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+import { API_URL } from '../config/api.js';
 
 fetch(API_URL + "/health")
   .then(r => r.json())
