@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "AgriConnect Botswana - Frontend React Application",
+  "homepage": "https://dondie52.github.io/agriconnect-web-frontend/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
