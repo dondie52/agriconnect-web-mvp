@@ -352,6 +352,121 @@ The UI follows a clean, farmer-friendly design:
    ```
 4. Deploy frontend to Vercel/Netlify
 
+### Deploy Frontend to GitHub Pages
+
+GitHub Pages provides free static hosting for your frontend application.
+
+#### Prerequisites
+
+- Your backend must be deployed separately (e.g., on Render, Railway, or Heroku)
+- You need a GitHub repository for the frontend code
+
+#### Environment Variables on GitHub Pages
+
+GitHub Pages serves static files only, so environment variables must be set **at build time**. There are two approaches:
+
+**Option A: Local Build and Deploy (Recommended for simplicity)**
+
+1. Create/edit `frontend/.env.production` with your production values:
+   ```env
+   VITE_API_URL=https://your-backend.onrender.com/api
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+
+2. Build and deploy locally (variables are baked into the build)
+
+**Option B: GitHub Actions (Recommended for CI/CD)**
+
+1. Go to your GitHub repository Settings > Secrets and variables > Actions
+2. Add these repository secrets:
+   - `VITE_API_URL` - Your backend API URL
+   - `VITE_SUPABASE_URL` - Your Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY` - Your Supabase anonymous key
+3. Create a GitHub Actions workflow to build with these secrets
+
+#### Step-by-Step Deployment
+
+1. **Navigate to frontend directory**
+   ```bash
+   cd frontend
+   ```
+
+2. **Install dependencies** (includes gh-pages)
+   ```bash
+   npm install
+   ```
+
+3. **Configure environment variables**
+   
+   Edit `.env.production` with your actual production values:
+   ```env
+   VITE_API_URL=https://your-backend.onrender.com/api
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+
+4. **Build the production bundle**
+   ```bash
+   npm run build
+   ```
+
+5. **Deploy to GitHub Pages**
+   ```bash
+   npm run deploy
+   ```
+
+   This pushes the `dist` folder to the `gh-pages` branch.
+
+6. **Enable GitHub Pages** (first time only)
+   - Go to repository Settings > Pages
+   - Set Source to "Deploy from a branch"
+   - Select `gh-pages` branch and `/ (root)` folder
+   - Save
+
+7. **Access your site** at:
+   ```
+   https://your-username.github.io/agriconnect-web-frontend/
+   ```
+
+#### Redeploying After Changes
+
+After making code changes, redeploy with:
+
+```bash
+cd frontend
+npm run build
+npm run deploy
+```
+
+Or as a single command:
+```bash
+cd frontend && npm run build && npm run deploy
+```
+
+#### Quick Reference: Terminal Commands
+
+```bash
+# Full deployment from scratch
+cd frontend
+npm install
+# Edit .env.production with your values
+npm run build
+npm run deploy
+
+# Redeploy after changes
+cd frontend
+npm run build
+npm run deploy
+```
+
+#### Important Notes
+
+- **SPA Routing**: GitHub Pages doesn't support client-side routing by default. If you have routing issues, you may need to use hash-based routing or add a 404.html redirect
+- **Base Path**: The app is configured with base path `/agriconnect-web-frontend/` in vite.config.js
+- **CORS**: Ensure your backend allows requests from `https://your-username.github.io`
+- **Environment Variables**: Never commit real API keys to the repository. Use `.env.production` locally or GitHub Secrets for CI/CD
+
 ## 🧪 Testing
 
 ```bash
