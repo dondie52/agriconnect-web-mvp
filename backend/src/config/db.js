@@ -1,5 +1,5 @@
 const { Pool } = require('pg');
-const net = require('net');
+const dns = require('dns');
 require('dotenv').config();
 
 // Normalize Supabase pooled URLs to avoid "Tenant or user not found" errors
@@ -12,6 +12,12 @@ const normalizeDatabaseUrl = (connectionString) => {
     const projectRef = process.env.SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_ID;
     const optionsParam = url.searchParams.get('options') || '';
 
+    if (host.includes('pooler.supabase') && !projectRef) {
+      throw new Error(
+        'Supabase pooler connections require SUPABASE_PROJECT_REF (or SUPABASE_PROJECT_ID) to be set.'
+      );
+    }
+
     if (host.includes('pooler.supabase') && projectRef && !optionsParam.includes('project=')) {
       url.searchParams.set('options', `project=${projectRef}`);
     }
@@ -23,25 +29,55 @@ const normalizeDatabaseUrl = (connectionString) => {
 
     return url.toString();
   } catch (error) {
-    console.warn('Invalid DATABASE_URL, using raw value');
-    return connectionString;
+    console.error('DATABASE_URL validation failed:', error.message);
+    throw error;
   }
 };
 
-// Force IPv4 to fix Supabase connection issues
-const originalConnect = net.Socket.prototype.connect;
-net.Socket.prototype.connect = function(options, ...args) {
-  if (typeof options === 'object' && options.host) {
-    options.family = 4;
-  }
-  return originalConnect.call(this, options, ...args);
+// Force IPv4 DNS resolution for a specific hostname by patching dns.lookup
+const enforceIPv4Lookup = (hostnameToForce) => {
+  if (!hostnameToForce) return () => {};
+
+  const originalLookup = dns.lookup;
+
+  dns.lookup = (hostname, options, callback) => {
+    const shouldForce = hostname === hostnameToForce;
+
+    if (!shouldForce) {
+      return originalLookup(hostname, options, callback);
+    }
+
+    const callbackFn = typeof options === 'function' ? options : callback;
+    const lookupOptions = typeof options === 'object' && options !== null ? options : {};
+    const hints = (lookupOptions.hints || 0) | dns.ADDRCONFIG | dns.V4MAPPED;
+
+    return originalLookup(
+      hostname,
+      {
+        ...lookupOptions,
+        family: 4,
+        hints,
+      },
+      callbackFn
+    );
+  };
+
+  return () => {
+    dns.lookup = originalLookup;
+  };
 };
 
 // Pool config
 let poolConfig;
 
+let restoreLookup;
+
 if (process.env.DATABASE_URL) {
   const normalizedUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
+  const url = new URL(normalizedUrl);
+
+  restoreLookup = enforceIPv4Lookup(url.hostname);
+
   poolConfig = {
     connectionString: normalizedUrl,
     ssl: { rejectUnauthorized: false },
@@ -49,15 +85,18 @@ if (process.env.DATABASE_URL) {
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
   };
-  console.log('📡 Using Supabase pooled connection');
+  console.log('📡 Using Supabase pooled connection (IPv4 DNS enforced)');
 } else {
+  const host = process.env.DB_HOST || 'localhost';
+  restoreLookup = enforceIPv4Lookup(host);
+
   poolConfig = {
-    host: process.env.DB_HOST || 'localhost',
+    host,
     port: process.env.DB_PORT || 5432,
     database: process.env.DB_NAME || 'agriconnect',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASS || '',
-    ssl: false
+    ssl: false,
   };
 }
 
