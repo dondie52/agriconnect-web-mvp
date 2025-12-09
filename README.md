@@ -102,6 +102,12 @@ agriconnect/
    FRONTEND_URL=http://localhost:3000
    ```
 
+   **If you use Supabase connection pooling (hosts like `pooler.supabase.co` on Render):**
+   - Set `SUPABASE_PROJECT_REF` (or `SUPABASE_PROJECT_ID`) to your Supabase project ref, e.g. `abcd1234`.
+   - Ensure your `DATABASE_URL` includes the pooler host **and** the `options=project%3D<ref>` query param. The backend will append the option automatically when the environment variable is present.
+   - Without the project ref, Supabase returns `Tenant or user not found` and the server will fail fast during startup.
+   - Render services without IPv6 egress can hit `ENETUNREACH` against Supabase IPv6 endpoints; the backend enforces IPv4 DNS lookups automatically.
+
    **Option B: Using Local PostgreSQL**
    ```env
    DB_HOST=localhost
@@ -268,6 +274,7 @@ The UI follows a clean, farmer-friendly design:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string (Supabase) | `postgresql://postgres:password@db.xxx.supabase.co:5432/postgres` |
+| `SUPABASE_PROJECT_REF` | Supabase project ref (required for pooler.supabase.* hosts) | `abc123def456` |
 | `PORT` | Server port | `10000` |
 | `NODE_ENV` | Environment mode | `production` |
 | `JWT_SECRET` | Secret key for JWT tokens | `your-secret-key` |
