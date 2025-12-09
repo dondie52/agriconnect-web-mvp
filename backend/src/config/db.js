@@ -1,28 +1,31 @@
+require('dotenv').config();
 const { Pool } = require('pg');
 const dns = require('dns');
-require('dotenv').config();
 
-// Normalize Supabase pooled URLs to avoid "Tenant or user not found" errors
+// ---- Normalize Supabase pooled URLs ----
 const normalizeDatabaseUrl = (connectionString) => {
   try {
     const url = new URL(connectionString);
     const host = url.hostname || '';
 
-    // Supabase connection pooling endpoints (pooler.supabase.*) require the project ref
-    const projectRef = process.env.SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_ID;
+    const projectRef =
+      process.env.SUPABASE_PROJECT_REF || process.env.SUPABASE_PROJECT_ID;
+
     const optionsParam = url.searchParams.get('options') || '';
 
+    // Validate pooled connection requirement
     if (host.includes('pooler.supabase') && !projectRef) {
       throw new Error(
         'Supabase pooler connections require SUPABASE_PROJECT_REF (or SUPABASE_PROJECT_ID) to be set.'
       );
     }
 
+    // Inject project reference into pooled connections
     if (host.includes('pooler.supabase') && projectRef && !optionsParam.includes('project=')) {
       url.searchParams.set('options', `project=${projectRef}`);
     }
 
-    // Ensure SSL is enforced when not explicitly provided
+    // Ensure SSL when connecting to Supabase
     if (host.includes('supabase') && !url.searchParams.has('sslmode')) {
       url.searchParams.set('sslmode', 'require');
     }
@@ -34,7 +37,7 @@ const normalizeDatabaseUrl = (connectionString) => {
   }
 };
 
-// Force IPv4 DNS resolution for a specific hostname by patching dns.lookup
+// ---- Force IPv4 so Supabase doesn't choke ----
 const enforceIPv4Lookup = (hostnameToForce) => {
   if (!hostnameToForce) return () => {};
 
@@ -67,9 +70,10 @@ const enforceIPv4Lookup = (hostnameToForce) => {
   };
 };
 
-// Pool config
-let poolConfig;
-
+// ----------------------------------
+// Build PG pool config
+// ----------------------------------
+let poolConfig = {};
 let restoreLookup;
 
 if (process.env.DATABASE_URL) {
@@ -85,7 +89,8 @@ if (process.env.DATABASE_URL) {
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
   };
-  console.log('📡 Using Supabase pooled connection (IPv4 DNS enforced)');
+
+  console.log('📡 Using Supabase pooled connection (IPv4 enforced)');
 } else {
   const host = process.env.DB_HOST || 'localhost';
   restoreLookup = enforceIPv4Lookup(host);
@@ -98,26 +103,34 @@ if (process.env.DATABASE_URL) {
     password: process.env.DB_PASS || '',
     ssl: false,
   };
+
+  console.log('📌 Using local DB config');
 }
 
 const pool = new Pool(poolConfig);
 
-// Simple query helper
-const query = (text, params) => pool.query(text, params);
+// ----------------------------------
+// Logging
+// ----------------------------------
+pool.on('connect', () => {
+  console.log('✅ Connected successfully to database');
+});
 
-// Optional client
-const getClient = async () => pool.connect();
+pool.on('error', (err) => {
+  console.error('❌ Database connection pool error:', err);
+});
 
-// Connection test
+// ----------------------------------
+// Test Function
+// ----------------------------------
 const testConnection = async () => {
-  const res = await pool.query('SELECT NOW()');
-  console.log('Connected successfully to database', res.rows[0]);
-  return res.rows[0];
+  try {
+    const result = await pool.query('SELECT NOW()');
+    console.log('📌 DB Time:', result.rows[0].now);
+  } catch (err) {
+    console.error('❌ DB test failed:', err.message);
+    throw err;
+  }
 };
 
-module.exports = {
-  pool,
-  query,
-  getClient,
-  testConnection
-};
+module.exports = { pool, testConnection };
