@@ -268,6 +268,7 @@ The UI follows a clean, farmer-friendly design:
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `DATABASE_URL` | PostgreSQL connection string (Supabase) | `postgresql://postgres:password@db.xxx.supabase.co:5432/postgres` |
+| `SUPABASE_PROJECT_REF` | Supabase project ref (required for pooler.supabase.* hosts) | `abc123def456` |
 | `PORT` | Server port | `10000` |
 | `NODE_ENV` | Environment mode | `production` |
 | `JWT_SECRET` | Secret key for JWT tokens | `your-secret-key` |
