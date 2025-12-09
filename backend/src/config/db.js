@@ -34,37 +34,69 @@ const normalizeDatabaseUrl = (connectionString) => {
   }
 };
 
-// Force IPv4 DNS resolution to avoid IPv6-only hosts in environments without IPv6 egress
-const lookupIPv4Only = (hostname, options, callback) => {
-  const lookupOptions = typeof options === 'object' ? options : {};
-  const hints = (lookupOptions.hints || 0) | dns.ADDRCONFIG | dns.V4MAPPED;
+// Force IPv4 DNS resolution for a specific hostname by patching dns.lookup
+const enforceIPv4Lookup = (hostnameToForce) => {
+  if (!hostnameToForce) return () => {};
 
-  return dns.lookup(hostname, { ...lookupOptions, family: 4, hints }, callback);
+  const originalLookup = dns.lookup;
+
+  dns.lookup = (hostname, options, callback) => {
+    const shouldForce = hostname === hostnameToForce;
+
+    if (!shouldForce) {
+      return originalLookup(hostname, options, callback);
+    }
+
+    const callbackFn = typeof options === 'function' ? options : callback;
+    const lookupOptions = typeof options === 'object' && options !== null ? options : {};
+    const hints = (lookupOptions.hints || 0) | dns.ADDRCONFIG | dns.V4MAPPED;
+
+    return originalLookup(
+      hostname,
+      {
+        ...lookupOptions,
+        family: 4,
+        hints,
+      },
+      callbackFn
+    );
+  };
+
+  return () => {
+    dns.lookup = originalLookup;
+  };
 };
 
 // Pool config
 let poolConfig;
 
+let restoreLookup;
+
 if (process.env.DATABASE_URL) {
   const normalizedUrl = normalizeDatabaseUrl(process.env.DATABASE_URL);
+  const url = new URL(normalizedUrl);
+
+  restoreLookup = enforceIPv4Lookup(url.hostname);
+
   poolConfig = {
     connectionString: normalizedUrl,
     ssl: { rejectUnauthorized: false },
     max: 10,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 10000,
-    lookup: lookupIPv4Only,
   };
   console.log('📡 Using Supabase pooled connection (IPv4 DNS enforced)');
 } else {
+  const host = process.env.DB_HOST || 'localhost';
+  restoreLookup = enforceIPv4Lookup(host);
+
   poolConfig = {
-    host: process.env.DB_HOST || 'localhost',
+    host,
     port: process.env.DB_PORT || 5432,
     database: process.env.DB_NAME || 'agriconnect',
     user: process.env.DB_USER || 'postgres',
     password: process.env.DB_PASS || '',
     ssl: false,
-    lookup: lookupIPv4Only,
   };
 }
 
