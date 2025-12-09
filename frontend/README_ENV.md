@@ -1,35 +1,24 @@
-# Environment Variables Setup
+# Environment Variables Setup (Vite)
 
-## Important: Restart Required
+The frontend is built with **Vite**, so all environment variables must use the `VITE_` prefix and live in the `frontend/.env` file.
 
-**Create React App only reads environment variables when the dev server starts.**
+## Required values
 
-After updating `.env` file, you **MUST**:
-1. Stop the React dev server (Ctrl+C)
-2. Restart it with `npm start`
+Add the following to `frontend/.env` (replace the Supabase key with your real value):
 
-## Environment Variables
-
-The following environment variables are required:
-
-```bash
-REACT_APP_API_URL=https://agriconnect-web-mvp.onrender.com/api
-REACT_APP_SUPABASE_URL=https://dbrazdspyhfegbicuubq.supabase.co
-REACT_APP_SUPABASE_ANON_KEY=<your real anon key>
+```
+VITE_API_URL=https://agriconnect-web-mvp.onrender.com/api
+VITE_UPLOAD_URL=https://agriconnect-web-mvp.onrender.com/uploads
+VITE_SUPABASE_URL=https://dbrazdspyhfegbicuubq.supabase.co
+VITE_SUPABASE_ANON_KEY=<your real anon key>
 ```
 
-## Verification
+## Local development reminder
 
-After restarting, check the browser console. You should see:
+After updating `.env`, restart the dev server so Vite picks up the new values:
+
 ```
-🔗 API Configuration: {
-  API_URL: "https://agriconnect-web-mvp.onrender.com/api",
-  ...
-}
+npm run dev
 ```
 
-If you still see `localhost:5000`, the environment variable is not being read. Check:
-1. The `.env` file is in the `frontend/` directory
-2. Variable names start with `REACT_APP_`
-3. The dev server was restarted after changes
-
+You should see the API configuration logged in the browser console during development. If values are missing, double-check the `.env` file path and variable names.

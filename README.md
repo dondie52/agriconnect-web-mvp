@@ -11,6 +11,14 @@ AgriConnect addresses three major obstacles faced by Botswana's farmers:
 - **Lack of Real-Time Information**: Provides market prices, weather alerts, and farming guides
 - **Isolated Farmer Community**: Offers crop planning tools to avoid oversupply
 
+## 📝 Quick Summary
+
+- **What it is:** A full-stack marketplace that connects Botswana's farmers, buyers, and admins with real-time pricing, weather, and order flows.
+- **Frontend:** React + Vite + TailwindCSS, deployed to GitHub Pages with the repository path set via `VITE_BASE_PATH`.
+- **Backend:** Node.js/Express with PostgreSQL (Supabase hosted), JWT auth, and file uploads; currently live on Render at `https://agriconnect-web-mvp.onrender.com`.
+- **APIs & data:** RESTful endpoints, Recharts for visualization, and OpenWeather for weather data.
+- **Setup pointers:** Environment variables for Vite live in `frontend/.env.example`; backend configuration options are in `backend/.env.example` with Supabase as the recommended database host.
+
 ## 🛠 Tech Stack
 
 ### Backend
