@@ -4,6 +4,8 @@
 
 AgriConnect is a full-stack web application that empowers smallholder farmers in Botswana by connecting them directly to buyers, providing real-time market information, weather updates, and tools for crop planning.
 
+> 🚀 **Just want to run the app?** Follow the streamlined steps in [`RUNNING_PAGE.md`](RUNNING_PAGE.md) for the fastest path to a local backend + Vite frontend.
+
 ## 🎯 Project Overview
 
 AgriConnect addresses three major obstacles faced by Botswana's farmers:
