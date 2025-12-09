@@ -217,14 +217,16 @@ const broadcastPriceUpdate = (data) => {
 // Export broadcast function for use by other modules
 module.exports.broadcastPriceUpdate = broadcastPriceUpdate;
 
+const { testConnection } = require('./config/db');
+
 const startServer = async () => {
-  // Test database connection
-  const { testConnection } = require('./config/db');
+  // Test database connection before starting services
   try {
     await testConnection();
     console.log('✅ Database connection successful');
   } catch (err) {
     console.error('❌ Database connection failed:', err.message);
+    process.exit(1);
   }
 
   // Start the scheduler for periodic tasks
