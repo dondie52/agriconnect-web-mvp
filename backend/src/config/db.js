@@ -48,9 +48,10 @@ function normalizeDatabaseUrl(connectionString = process.env.DATABASE_URL) {
 const pool = new Pool({
   connectionString: normalizeDatabaseUrl(process.env.DATABASE_URL),
   ssl: { rejectUnauthorized: false },
-  max: 20,
-  idleTimeoutMillis: 30000,
+  keepAlive: true,
+  statement_timeout: 10000,
   connectionTimeoutMillis: 10000,
+  idle_in_transaction_session_timeout: 10000,
 });
 
 pool.on('connect', () => console.log('✅ Connected successfully to database'));
