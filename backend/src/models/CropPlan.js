@@ -2,14 +2,14 @@
  * CropPlan Model for AgriConnect
  * Handles crop planning data for farmers
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const CropPlan = {
   // Create or update a crop plan
   async upsert({ farmer_id, crop_id, season, year, planned_quantity, notes }) {
     const currentYear = year || new Date().getFullYear();
     
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO crop_plans (farmer_id, crop_id, season, year, planned_quantity, notes, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, NOW())
        ON CONFLICT (farmer_id, crop_id, season, year)
@@ -42,7 +42,7 @@ const CropPlan = {
       paramCount++;
     }
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT cp.*, c.name as crop_name, c.category as crop_category
        FROM crop_plans cp
        JOIN crops c ON cp.crop_id = c.id
@@ -56,7 +56,7 @@ const CropPlan = {
 
   // Delete a crop plan
   async delete(id, farmer_id) {
-    const result = await query(
+    const result = await pool.query(
       'DELETE FROM crop_plans WHERE id = $1 AND farmer_id = $2 RETURNING id',
       [id, farmer_id]
     );
@@ -68,7 +68,7 @@ const CropPlan = {
     const currentYear = year || new Date().getFullYear();
     const currentSeason = season || getCurrentSeason();
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT c.id as crop_id, c.name as crop_name, c.category,
               COUNT(cp.id) as farmer_count,
               COALESCE(SUM(cp.planned_quantity), 0) as total_planned_quantity
@@ -89,7 +89,7 @@ const CropPlan = {
     const currentYear = year || new Date().getFullYear();
     const currentSeason = season || getCurrentSeason();
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT c.id as crop_id, c.name as crop_name, c.category,
               r.id as region_id, r.name as region_name,
               COUNT(cp.id) as farmer_count,
@@ -111,7 +111,7 @@ const CropPlan = {
   async getSummary(farmer_id) {
     const currentYear = new Date().getFullYear();
     
-    const result = await query(
+    const result = await pool.query(
       `SELECT season, COUNT(*) as crop_count, 
               COALESCE(SUM(planned_quantity), 0) as total_quantity
        FROM crop_plans

@@ -4,7 +4,7 @@
  */
 const BuyerRequest = require('../models/BuyerRequest');
 const Notification = require('../models/Notification');
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const buyerRequestController = {
   // Create a new buyer request
@@ -26,7 +26,7 @@ const buyerRequestController = {
       const fullRequest = await BuyerRequest.findById(request.id);
 
       // Notify relevant farmers (those who have active listings of this crop in the region)
-      const farmersResult = await query(
+      const farmersResult = await pool.query(
         `SELECT DISTINCT l.farmer_id 
          FROM listings l
          WHERE l.crop_id = $1 

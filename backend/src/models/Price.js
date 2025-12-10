@@ -2,12 +2,12 @@
  * Price Model for AgriConnect
  * Handles market price data operations
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const Price = {
   // Create or update price for crop in region
   async upsert({ crop_id, region_id, price, unit = 'kg', updated_by }) {
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO prices (crop_id, region_id, price, unit, updated_by, updated_at)
        VALUES ($1, $2, $3, $4, $5, NOW())
        ON CONFLICT (crop_id, region_id)
@@ -46,7 +46,7 @@ const Price = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT p.*, 
               c.name as crop_name, c.category as crop_category,
               r.name as region_name,
@@ -64,7 +64,7 @@ const Price = {
       values
     );
 
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM prices p ${where}`,
       values.slice(0, -2)
     );
@@ -79,7 +79,7 @@ const Price = {
 
   // Get price for specific crop and region
   async findByCropAndRegion(crop_id, region_id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT p.*, 
               c.name as crop_name,
               r.name as region_name
@@ -94,7 +94,7 @@ const Price = {
 
   // Get latest prices by crop (across all regions)
   async findByCrop(crop_id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT p.*, r.name as region_name
        FROM prices p
        JOIN regions r ON p.region_id = r.id
@@ -107,7 +107,7 @@ const Price = {
 
   // Get latest prices for a region
   async findByRegion(region_id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT p.*, c.name as crop_name, c.category
        FROM prices p
        JOIN crops c ON p.crop_id = c.id
@@ -120,7 +120,7 @@ const Price = {
 
   // Delete price record
   async delete(crop_id, region_id) {
-    const result = await query(
+    const result = await pool.query(
       'DELETE FROM prices WHERE crop_id = $1 AND region_id = $2 RETURNING *',
       [crop_id, region_id]
     );
@@ -129,7 +129,7 @@ const Price = {
 
   // Get price history (for future implementation of price trends)
   async getHistory(crop_id, region_id, days = 30) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT * FROM price_history
        WHERE crop_id = $1 AND region_id = $2 
        AND recorded_at >= NOW() - INTERVAL '${days} days'

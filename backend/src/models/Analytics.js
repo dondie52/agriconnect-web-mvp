@@ -2,19 +2,19 @@
  * Analytics Model for AgriConnect
  * Tracks listing views, clicks, and contact events
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const Analytics = {
   // Track a listing view
   async trackView(listing_id, viewer_id = null) {
-    await query(
+    await pool.query(
       `INSERT INTO analytics_events (listing_id, viewer_id, event_type, created_at)
        VALUES ($1, $2, 'view', NOW())`,
       [listing_id, viewer_id]
     );
 
     // Also increment the views counter on the listing
-    await query(
+    await pool.query(
       'UPDATE listings SET views = COALESCE(views, 0) + 1 WHERE id = $1',
       [listing_id]
     );
@@ -22,7 +22,7 @@ const Analytics = {
 
   // Track a contact click
   async trackContact(listing_id, viewer_id) {
-    await query(
+    await pool.query(
       `INSERT INTO analytics_events (listing_id, viewer_id, event_type, created_at)
        VALUES ($1, $2, 'contact', NOW())`,
       [listing_id, viewer_id]
@@ -31,7 +31,7 @@ const Analytics = {
 
   // Track an order placement
   async trackOrder(listing_id, viewer_id) {
-    await query(
+    await pool.query(
       `INSERT INTO analytics_events (listing_id, viewer_id, event_type, created_at)
        VALUES ($1, $2, 'order', NOW())`,
       [listing_id, viewer_id]
@@ -40,7 +40,7 @@ const Analytics = {
 
   // Get analytics for a farmer's listings
   async getfarmerAnalytics(farmer_id, days = 7) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT 
         DATE(ae.created_at) as date,
         ae.event_type,
@@ -59,7 +59,7 @@ const Analytics = {
 
   // Get analytics summary for farmer dashboard
   async getFarmerSummary(farmer_id, days = 7) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT 
         COUNT(*) FILTER (WHERE ae.event_type = 'view') as total_views,
         COUNT(*) FILTER (WHERE ae.event_type = 'contact') as total_contacts,
@@ -77,7 +77,7 @@ const Analytics = {
 
   // Get top performing listings for a farmer
   async getTopListings(farmer_id, limit = 5) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT l.id, l.crop_id, c.name as crop_name, l.price, l.quantity,
               l.views,
               COUNT(*) FILTER (WHERE ae.event_type = 'contact') as contacts,
@@ -97,7 +97,7 @@ const Analytics = {
 
   // Get daily trends for a listing
   async getListingTrends(listing_id, days = 7) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT 
         DATE(created_at) as date,
         event_type,
@@ -115,7 +115,7 @@ const Analytics = {
 
   // Admin: Get platform-wide analytics
   async getPlatformAnalytics(days = 30) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT 
         DATE(created_at) as date,
         event_type,
@@ -131,7 +131,7 @@ const Analytics = {
 
   // Admin: Get overview stats
   async getPlatformOverview() {
-    const result = await query(
+    const result = await pool.query(
       `SELECT 
         (SELECT COUNT(*) FROM users WHERE role = 'farmer') as total_farmers,
         (SELECT COUNT(*) FROM users WHERE role = 'buyer') as total_buyers,

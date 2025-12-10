@@ -2,7 +2,7 @@
  * Dashboard Controller for AgriConnect
  * Provides optimized stats endpoints for real-time dashboard updates
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const dashboardController = {
   /**
@@ -23,28 +23,28 @@ const dashboardController = {
           buyerRequestsResult
         ] = await Promise.all([
           // Count active listings
-          query(
+          pool.query(
             `SELECT COUNT(*) as active_listings 
              FROM listings 
              WHERE farmer_id = $1 AND status = 'active'`,
             [userId]
           ),
           // Count pending orders
-          query(
+          pool.query(
             `SELECT COUNT(*) as pending_orders 
              FROM orders 
              WHERE farmer_id = $1 AND status = 'pending'`,
             [userId]
           ),
           // Sum completed order revenue
-          query(
+          pool.query(
             `SELECT COALESCE(SUM(total_price), 0) as total_revenue 
              FROM orders 
              WHERE farmer_id = $1 AND status = 'completed'`,
             [userId]
           ),
           // Count relevant buyer requests (from same region)
-          query(
+          pool.query(
             `SELECT COUNT(*) as buyer_requests 
              FROM buyer_requests br
              JOIN users u ON u.id = $1
@@ -73,21 +73,21 @@ const dashboardController = {
           spendingResult
         ] = await Promise.all([
           // Count pending orders
-          query(
+          pool.query(
             `SELECT COUNT(*) as pending_orders 
              FROM orders 
              WHERE buyer_id = $1 AND status = 'pending'`,
             [userId]
           ),
           // Count open requests
-          query(
+          pool.query(
             `SELECT COUNT(*) as open_requests 
              FROM buyer_requests 
              WHERE buyer_id = $1 AND status = 'open'`,
             [userId]
           ),
           // Sum total spending
-          query(
+          pool.query(
             `SELECT COALESCE(SUM(total_price), 0) as total_spending 
              FROM orders 
              WHERE buyer_id = $1 AND status = 'completed'`,
@@ -114,26 +114,26 @@ const dashboardController = {
           transactionsResult
         ] = await Promise.all([
           // Count users by role
-          query(
+          pool.query(
             `SELECT role, COUNT(*) as count 
              FROM users 
              WHERE is_active = true 
              GROUP BY role`
           ),
           // Count active listings
-          query(
+          pool.query(
             `SELECT COUNT(*) as active_listings 
              FROM listings 
              WHERE status = 'active'`
           ),
           // Count orders by status
-          query(
+          pool.query(
             `SELECT status, COUNT(*) as count 
              FROM orders 
              GROUP BY status`
           ),
           // Total transaction value
-          query(
+          pool.query(
             `SELECT COALESCE(SUM(total_price), 0) as total_value 
              FROM orders 
              WHERE status = 'completed'`

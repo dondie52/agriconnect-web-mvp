@@ -57,8 +57,8 @@ const priceController = {
       
       const where = whereClause.length > 0 ? 'WHERE ' + whereClause.join(' AND ') : '';
       
-      const { query } = require('../config/db');
-      const result = await query(
+      const { pool } = require('../config/db');
+      const result = await pool.query(
         `SELECT 
           p.id,
           c.name as crop,

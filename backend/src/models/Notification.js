@@ -2,12 +2,12 @@
  * Notification Model for AgriConnect
  * Handles user notifications
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const Notification = {
   // Create a notification
   async create({ user_id, type, title, message, reference_id, reference_type }) {
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO notifications (user_id, type, title, message, reference_id, reference_type, is_read, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, false, NOW())
        RETURNING *`,
@@ -32,7 +32,7 @@ const Notification = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT * FROM notifications
        WHERE ${whereClause.join(' AND ')}
        ORDER BY created_at DESC
@@ -40,7 +40,7 @@ const Notification = {
       values
     );
 
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM notifications WHERE ${whereClause.join(' AND ')}`,
       values.slice(0, -2)
     );
@@ -55,7 +55,7 @@ const Notification = {
 
   // Get unread count
   async getUnreadCount(user_id) {
-    const result = await query(
+    const result = await pool.query(
       'SELECT COUNT(*) FROM notifications WHERE user_id = $1 AND is_read = false',
       [user_id]
     );
@@ -64,7 +64,7 @@ const Notification = {
 
   // Mark as read
   async markAsRead(id, user_id) {
-    const result = await query(
+    const result = await pool.query(
       `UPDATE notifications SET is_read = true 
        WHERE id = $1 AND user_id = $2
        RETURNING *`,
@@ -75,7 +75,7 @@ const Notification = {
 
   // Mark all as read
   async markAllAsRead(user_id) {
-    const result = await query(
+    const result = await pool.query(
       `UPDATE notifications SET is_read = true 
        WHERE user_id = $1 AND is_read = false
        RETURNING id`,
@@ -86,7 +86,7 @@ const Notification = {
 
   // Delete notification
   async delete(id, user_id) {
-    const result = await query(
+    const result = await pool.query(
       'DELETE FROM notifications WHERE id = $1 AND user_id = $2 RETURNING id',
       [id, user_id]
     );
@@ -95,7 +95,7 @@ const Notification = {
 
   // Delete old notifications (cleanup)
   async deleteOld(days = 30) {
-    const result = await query(
+    const result = await pool.query(
       `DELETE FROM notifications WHERE created_at < NOW() - INTERVAL '${days} days' RETURNING id`
     );
     return result.rowCount;

@@ -5,7 +5,7 @@
  */
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 // Generate JWT token
 const generateToken = (userId, role) => {
@@ -52,7 +52,7 @@ const authController = {
       }
 
       // Check if phone already exists
-      const existingPhone = await query(
+      const existingPhone = await pool.query(
         'SELECT id FROM users WHERE phone = $1 LIMIT 1',
         [phone]
       );
@@ -66,7 +66,7 @@ const authController = {
 
       // Check if email already exists (if provided)
       if (email) {
-        const existingEmail = await query(
+        const existingEmail = await pool.query(
           'SELECT id FROM users WHERE email = $1 LIMIT 1',
           [email]
         );
@@ -86,7 +86,7 @@ const authController = {
       const safeRole = role === 'admin' ? 'farmer' : role;
 
       // Insert into Supabase
-      const result = await query(
+      const result = await pool.query(
         `INSERT INTO users (name, email, phone, password, role, region_id)
          VALUES ($1, $2, $3, $4, $5, $6)
          RETURNING id, name, email, phone, role, region_id`,
@@ -158,7 +158,7 @@ const authController = {
       }
 
       // Query Supabase for user
-      const result = await query(
+      const result = await pool.query(
         'SELECT * FROM users WHERE phone = $1 LIMIT 1',
         [phone.trim()]
       );
@@ -230,7 +230,7 @@ const authController = {
   // Get current user profile
   async getProfile(req, res) {
     try {
-      const result = await query(
+      const result = await pool.query(
         `SELECT u.id, u.name, u.email, u.phone, u.role, u.region_id, 
                 r.name as region_name, u.profile_photo, u.is_active, u.created_at
          FROM users u 
@@ -278,7 +278,7 @@ const authController = {
 
       // Check if new phone is already taken
       if (phone && phone !== req.user.phone) {
-        const existing = await query(
+        const existing = await pool.query(
           'SELECT id FROM users WHERE phone = $1 AND id != $2',
           [phone, req.user.id]
         );
@@ -292,7 +292,7 @@ const authController = {
 
       // Check if new email is already taken
       if (email) {
-        const existingEmail = await query(
+        const existingEmail = await pool.query(
           'SELECT id FROM users WHERE email = $1 AND id != $2',
           [email, req.user.id]
         );
@@ -340,7 +340,7 @@ const authController = {
       updates.push(`updated_at = NOW()`);
       values.push(req.user.id);
 
-      const result = await query(
+      const result = await pool.query(
         `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount}
          RETURNING id, name, email, phone, role, region_id, is_active, created_at, updated_at`,
         values
@@ -373,7 +373,7 @@ const authController = {
       const photoUrl = `/uploads/${req.file.filename}`;
 
       // Update user's profile photo
-      const result = await query(
+      const result = await pool.query(
         `UPDATE users SET profile_photo = $1, updated_at = NOW() 
          WHERE id = $2
          RETURNING id, name, email, phone, role, region_id, profile_photo, is_active, created_at`,
@@ -400,7 +400,7 @@ const authController = {
       const { currentPassword, newPassword } = req.body;
 
       // Get user with password
-      const userResult = await query(
+      const userResult = await pool.query(
         'SELECT password FROM users WHERE id = $1',
         [req.user.id]
       );
@@ -423,7 +423,7 @@ const authController = {
 
       // Hash and update password
       const hashedPassword = await bcrypt.hash(newPassword, 12);
-      await query(
+      await pool.query(
         'UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2',
         [hashedPassword, req.user.id]
       );

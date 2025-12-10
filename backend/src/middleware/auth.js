@@ -3,7 +3,7 @@
  * Handles JWT verification and role-based access control
  */
 const jwt = require('jsonwebtoken');
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 // Verify JWT token
 const auth = async (req, res, next) => {
@@ -33,7 +33,7 @@ const auth = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
     // Get user from database to ensure they still exist and are active
-    const result = await query(
+    const result = await pool.query(
       'SELECT id, name, email, phone, role, region_id, is_active FROM users WHERE id = $1',
       [decoded.userId]
     );
@@ -118,7 +118,7 @@ const optionalAuth = async (req, res, next) => {
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    const result = await query(
+    const result = await pool.query(
       'SELECT id, name, email, phone, role, region_id, is_active FROM users WHERE id = $1',
       [decoded.userId]
     );

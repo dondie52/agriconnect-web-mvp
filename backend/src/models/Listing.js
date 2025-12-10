@@ -2,12 +2,12 @@
  * Listing Model for AgriConnect
  * Handles produce listing data operations
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const Listing = {
   // Create a new listing
   async create({ farmer_id, crop_id, quantity, unit = 'kg', price, region_id, description, images = [] }) {
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO listings (farmer_id, crop_id, quantity, unit, price, region_id, description, images, status, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'active', NOW())
        RETURNING *`,
@@ -19,7 +19,7 @@ const Listing = {
 
   // Find listing by ID with full details
   async findById(id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT l.*, 
               c.name as crop_name, c.category as crop_category,
               r.name as region_name,
@@ -61,7 +61,7 @@ const Listing = {
     setClause.push(`updated_at = NOW()`);
     values.push(id);
 
-    const result = await query(
+    const result = await pool.query(
       `UPDATE listings SET ${setClause.join(', ')} WHERE id = $${paramCount} RETURNING *`,
       values
     );
@@ -71,7 +71,7 @@ const Listing = {
 
   // Delete listing (soft delete by setting status to 'deleted')
   async delete(id) {
-    const result = await query(
+    const result = await pool.query(
       `UPDATE listings SET status = 'deleted', updated_at = NOW() WHERE id = $1 RETURNING id`,
       [id]
     );
@@ -130,7 +130,7 @@ const Listing = {
 
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT l.*, 
               c.name as crop_name, c.category as crop_category,
               r.name as region_name,
@@ -146,7 +146,7 @@ const Listing = {
     );
 
     // Get total count
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM listings l
        JOIN crops c ON l.crop_id = c.id
        WHERE ${whereClause.join(' AND ')}`,
@@ -178,7 +178,7 @@ const Listing = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT l.*, 
               c.name as crop_name,
               r.name as region_name
@@ -191,7 +191,7 @@ const Listing = {
       values
     );
 
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM listings WHERE ${whereClause.join(' AND ')}`,
       values.slice(0, -2)
     );
@@ -206,7 +206,7 @@ const Listing = {
 
   // Increment view count
   async incrementViews(id) {
-    await query(
+    await pool.query(
       'UPDATE listings SET views = views + 1 WHERE id = $1',
       [id]
     );
@@ -214,7 +214,7 @@ const Listing = {
 
   // Get listing statistics for farmer
   async getStats(farmer_id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT 
         COUNT(*) FILTER (WHERE status = 'active') as active_listings,
         COUNT(*) FILTER (WHERE status = 'sold') as sold_listings,

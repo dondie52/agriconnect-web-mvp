@@ -3,7 +3,7 @@
  * Handles fetching, normalizing, and storing market prices from external sources
  */
 const axios = require('axios');
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 const Price = require('../models/Price');
 const Notification = require('../models/Notification');
 const priceCache = require('./priceCache');
@@ -95,8 +95,8 @@ async function fetchFAOPrices() {
  * Get crops and regions from database for mapping
  */
 async function getCropsAndRegions() {
-  const cropsResult = await query('SELECT id, name FROM crops');
-  const regionsResult = await query('SELECT id, name FROM regions');
+  const cropsResult = await pool.query('SELECT id, name FROM crops');
+  const regionsResult = await pool.query('SELECT id, name FROM regions');
   
   const cropMap = {};
   cropsResult.rows.forEach(crop => {
@@ -163,7 +163,7 @@ function mapFAOToCrops(faoData, cropMap, regionMap) {
  * Get all farmers for notifications
  */
 async function getAllFarmers() {
-  const result = await query(
+  const result = await pool.query(
     "SELECT id FROM users WHERE role = 'farmer' AND is_active = true"
   );
   return result.rows.map(row => row.id);
@@ -243,7 +243,7 @@ async function syncMarketPrices() {
       // This simulates market movement when external data is unavailable
       logger.info('FAO API unavailable, applying market fluctuations to existing prices');
       
-      const existingPrices = await query(`
+      const existingPrices = await pool.query(`
         SELECT p.*, c.name as crop_name, r.name as region_name 
         FROM prices p
         JOIN crops c ON p.crop_id = c.id
@@ -296,8 +296,8 @@ async function syncMarketPrices() {
         
         // Get names if not available
         if (!cropName || !regionName) {
-          const cropResult = await query('SELECT name FROM crops WHERE id = $1', [priceData.crop_id]);
-          const regionResult = await query('SELECT name FROM regions WHERE id = $1', [priceData.region_id]);
+          const cropResult = await pool.query('SELECT name FROM crops WHERE id = $1', [priceData.crop_id]);
+          const regionResult = await pool.query('SELECT name FROM regions WHERE id = $1', [priceData.region_id]);
           cropName = cropResult.rows[0]?.name || 'Unknown';
           regionName = regionResult.rows[0]?.name || 'Unknown';
         }
@@ -344,8 +344,8 @@ async function syncMarketPrices() {
       const { broadcastPriceUpdate } = require('../server');
       if (broadcastPriceUpdate && typeof broadcastPriceUpdate === 'function') {
         // Fetch latest prices to broadcast
-        const { query } = require('../config/db');
-        const latestPrices = await query(`
+        const { pool } = require('../config/db');
+        const latestPrices = await pool.query(`
           SELECT 
             c.name as crop,
             r.name as region,

@@ -2,12 +2,12 @@
  * BuyerRequest Model for AgriConnect
  * Handles buyer produce requests
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const BuyerRequest = {
   // Create a new buyer request
   async create({ buyer_id, crop_id, quantity, unit = 'kg', max_price, region_id, notes }) {
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO buyer_requests (buyer_id, crop_id, quantity, unit, max_price, region_id, notes, status, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, 'open', NOW())
        RETURNING *`,
@@ -19,7 +19,7 @@ const BuyerRequest = {
 
   // Find request by ID
   async findById(id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT br.*, 
               c.name as crop_name, c.category as crop_category,
               r.name as region_name,
@@ -56,7 +56,7 @@ const BuyerRequest = {
     setClause.push(`updated_at = NOW()`);
     values.push(id);
 
-    const result = await query(
+    const result = await pool.query(
       `UPDATE buyer_requests SET ${setClause.join(', ')} WHERE id = $${paramCount} RETURNING *`,
       values
     );
@@ -66,7 +66,7 @@ const BuyerRequest = {
 
   // Delete request
   async delete(id) {
-    const result = await query(
+    const result = await pool.query(
       'DELETE FROM buyer_requests WHERE id = $1 RETURNING id',
       [id]
     );
@@ -94,7 +94,7 @@ const BuyerRequest = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT br.*, 
               c.name as crop_name, c.category as crop_category,
               r.name as region_name,
@@ -109,7 +109,7 @@ const BuyerRequest = {
       values
     );
 
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM buyer_requests br WHERE ${whereClause.join(' AND ')}`,
       values.slice(0, -2)
     );
@@ -137,7 +137,7 @@ const BuyerRequest = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT br.*, 
               c.name as crop_name,
               r.name as region_name
@@ -150,7 +150,7 @@ const BuyerRequest = {
       values
     );
 
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM buyer_requests br WHERE ${whereClause.join(' AND ')}`,
       values.slice(0, -2)
     );
@@ -167,7 +167,7 @@ const BuyerRequest = {
   async findRelevantForFarmer(farmer_id, { page = 1, limit = 10 }) {
     const offset = (page - 1) * limit;
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT DISTINCT br.*, 
               c.name as crop_name,
               r.name as region_name,
@@ -193,7 +193,7 @@ const BuyerRequest = {
 
   // Close a request
   async close(id, buyer_id) {
-    const result = await query(
+    const result = await pool.query(
       `UPDATE buyer_requests SET status = 'closed', updated_at = NOW()
        WHERE id = $1 AND buyer_id = $2
        RETURNING *`,

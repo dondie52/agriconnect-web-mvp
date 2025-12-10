@@ -5,7 +5,7 @@
 const User = require('../models/User');
 const { Crop, Region } = require('../models/CropRegion');
 const Analytics = require('../models/Analytics');
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const adminController = {
   // Get all users with filters
@@ -102,7 +102,7 @@ const adminController = {
         });
       }
 
-      const result = await query(
+      const result = await pool.query(
         `UPDATE users SET role = $1, updated_at = NOW() WHERE id = $2 RETURNING id, name, role`,
         [role, req.params.id]
       );
@@ -303,7 +303,7 @@ const adminController = {
       const offset = (parseInt(page) - 1) * parseInt(limit);
       values.push(parseInt(limit), offset);
 
-      const result = await query(
+      const result = await pool.query(
         `SELECT l.*, 
                 c.name as crop_name,
                 r.name as region_name,
@@ -318,7 +318,7 @@ const adminController = {
         values
       );
 
-      const countResult = await query(
+      const countResult = await pool.query(
         `SELECT COUNT(*) FROM listings l ${where}`,
         values.slice(0, -2)
       );

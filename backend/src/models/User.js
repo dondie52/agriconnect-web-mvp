@@ -2,7 +2,7 @@
  * User Model for AgriConnect
  * Handles user data operations
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 const bcrypt = require('bcryptjs');
 
 const User = {
@@ -10,7 +10,7 @@ const User = {
   async create({ name, email, phone, password, role = 'farmer', region_id = null }) {
     const hashedPassword = await bcrypt.hash(password, 12);
     
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO users (name, email, phone, password, role, region_id, is_active, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, true, NOW())
        RETURNING id, name, email, phone, role, region_id, is_active, created_at`,
@@ -22,7 +22,7 @@ const User = {
 
   // Find user by phone number
   async findByPhone(phone) {
-    const result = await query(
+    const result = await pool.query(
       'SELECT * FROM users WHERE phone = $1',
       [phone]
     );
@@ -31,7 +31,7 @@ const User = {
 
   // Find user by ID
   async findById(id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT u.*, r.name as region_name 
        FROM users u 
        LEFT JOIN regions r ON u.region_id = r.id 
@@ -43,7 +43,7 @@ const User = {
 
   // Find user by email
   async findByEmail(email) {
-    const result = await query(
+    const result = await pool.query(
       'SELECT * FROM users WHERE email = $1',
       [email]
     );
@@ -72,7 +72,7 @@ const User = {
     setClause.push(`updated_at = NOW()`);
     values.push(id);
 
-    const result = await query(
+    const result = await pool.query(
       `UPDATE users SET ${setClause.join(', ')} WHERE id = $${paramCount}
        RETURNING id, name, email, phone, role, region_id, is_active, created_at, updated_at`,
       values
@@ -84,7 +84,7 @@ const User = {
   // Update password
   async updatePassword(id, newPassword) {
     const hashedPassword = await bcrypt.hash(newPassword, 12);
-    await query(
+    await pool.query(
       'UPDATE users SET password = $1, updated_at = NOW() WHERE id = $2',
       [hashedPassword, id]
     );
@@ -118,7 +118,7 @@ const User = {
 
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT u.id, u.name, u.email, u.phone, u.role, u.region_id, r.name as region_name,
               u.is_active, u.created_at
        FROM users u
@@ -130,7 +130,7 @@ const User = {
     );
 
     // Get total count
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM users ${where}`,
       values.slice(0, -2)
     );
@@ -145,7 +145,7 @@ const User = {
 
   // Toggle user active status (admin)
   async toggleActive(id) {
-    const result = await query(
+    const result = await pool.query(
       `UPDATE users SET is_active = NOT is_active, updated_at = NOW()
        WHERE id = $1
        RETURNING id, name, is_active`,
@@ -156,7 +156,7 @@ const User = {
 
   // Count users by role
   async countByRole() {
-    const result = await query(
+    const result = await pool.query(
       `SELECT role, COUNT(*) as count FROM users GROUP BY role`
     );
     return result.rows;
