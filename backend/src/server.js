@@ -29,6 +29,7 @@ const defaultAllowedOrigins = [
   'https://agriconnect-web-mvp.vercel.app',
   'https://agriconnect-web-mvp.onrender.com',
   'http://localhost:5173',
+  'http://localhost:3000',
 ];
 
 const envAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
@@ -48,6 +49,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
 console.log('🔐 Allowed CORS origins:', allowedOrigins.join(', ') || 'none');
