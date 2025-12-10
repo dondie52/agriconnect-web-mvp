@@ -2,12 +2,12 @@
  * Crop Model for AgriConnect
  * Handles crop/produce category data
  */
-const { query } = require('../config/db');
+const { pool } = require('../config/db');
 
 const Crop = {
   // Get all crops
   async findAll() {
-    const result = await query(
+    const result = await pool.query(
       'SELECT * FROM crops ORDER BY category, name'
     );
     return result.rows;
@@ -15,7 +15,7 @@ const Crop = {
 
   // Get crop by ID
   async findById(id) {
-    const result = await query(
+    const result = await pool.query(
       'SELECT * FROM crops WHERE id = $1',
       [id]
     );
@@ -24,7 +24,7 @@ const Crop = {
 
   // Get crops by category
   async findByCategory(category) {
-    const result = await query(
+    const result = await pool.query(
       'SELECT * FROM crops WHERE category = $1 ORDER BY name',
       [category]
     );
@@ -33,7 +33,7 @@ const Crop = {
 
   // Create crop (admin)
   async create({ name, category, description }) {
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO crops (name, category, description)
        VALUES ($1, $2, $3)
        RETURNING *`,
@@ -44,7 +44,7 @@ const Crop = {
 
   // Update crop (admin)
   async update(id, { name, category, description }) {
-    const result = await query(
+    const result = await pool.query(
       `UPDATE crops SET name = COALESCE($1, name), 
                         category = COALESCE($2, category),
                         description = COALESCE($3, description)
@@ -57,7 +57,7 @@ const Crop = {
 
   // Get categories
   async getCategories() {
-    const result = await query(
+    const result = await pool.query(
       'SELECT DISTINCT category FROM crops ORDER BY category'
     );
     return result.rows.map(r => r.category);
@@ -71,7 +71,7 @@ const Crop = {
 const Region = {
   // Get all regions
   async findAll() {
-    const result = await query(
+    const result = await pool.query(
       'SELECT * FROM regions ORDER BY name'
     );
     return result.rows;
@@ -79,7 +79,7 @@ const Region = {
 
   // Get region by ID
   async findById(id) {
-    const result = await query(
+    const result = await pool.query(
       'SELECT * FROM regions WHERE id = $1',
       [id]
     );
@@ -88,7 +88,7 @@ const Region = {
 
   // Create region (admin)
   async create({ name, latitude, longitude }) {
-    const result = await query(
+    const result = await pool.query(
       `INSERT INTO regions (name, latitude, longitude)
        VALUES ($1, $2, $3)
        RETURNING *`,
@@ -99,7 +99,7 @@ const Region = {
 
   // Update region (admin)
   async update(id, { name, latitude, longitude }) {
-    const result = await query(
+    const result = await pool.query(
       `UPDATE regions SET name = COALESCE($1, name),
                           latitude = COALESCE($2, latitude),
                           longitude = COALESCE($3, longitude)
