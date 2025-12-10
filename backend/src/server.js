@@ -40,14 +40,24 @@ const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllow
 
 const corsOptions = {
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow non-browser requests
+    // Allow requests with no origin (mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Allow all Vercel preview deployments
+    if (origin.includes('vercel.app')) return callback(null, true);
+    
+    // Allow listed origins
     if (allowedOrigins.includes(origin)) return callback(null, true);
+    
+    // Allow all in development
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    
     console.warn(`CORS blocked origin: ${origin}`);
     return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
 };
 
 console.log('🔐 Allowed CORS origins:', allowedOrigins.join(', ') || 'none');
@@ -72,9 +82,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static file serving for uploads
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
-// Serve frontend static files (for single ngrok tunnel setup)
-const frontendBuildPath = path.join(__dirname, '../../frontend/build');
-app.use(express.static(frontendBuildPath));
+// NOTE: Frontend is served by Vercel, not this backend
+// Static file serving removed - frontend/build does not exist on Render
 
 // Root-level health check (required by Railway/Vercel/DigitalOcean)
 app.get('/health', (req, res) => {
@@ -95,15 +104,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Serve frontend for all non-API routes (SPA catch-all)
-const frontendIndex = path.join(__dirname, '../../frontend/build/index.html');
-app.get('*', (req, res, next) => {
-  // Skip API routes
-  if (req.path.startsWith('/api') || req.path.startsWith('/uploads') || req.path.startsWith('/live')) {
-    return next();
-  }
-  res.sendFile(frontendIndex);
-});
+// NOTE: SPA routing is handled by Vercel, not this backend
 
 // 404 handler for API routes only
 app.use((req, res, next) => {
