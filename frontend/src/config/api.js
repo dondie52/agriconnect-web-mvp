@@ -15,15 +15,13 @@ const resolveApiUrl = () => {
   const envApiUrl = import.meta.env?.VITE_API_URL;
   if (envApiUrl) return normalizeApiUrl(envApiUrl);
 
+  // Prefer the current origin (works for both local and same-domain deployments)
   if (typeof window !== 'undefined' && window.location?.origin) {
-    // Use local API when running the frontend locally
-    if (window.location.origin.includes('localhost') || window.location.origin.includes('127.0.0.1')) {
-      return normalizeApiUrl(`${window.location.origin}/api`);
-    }
+    return normalizeApiUrl(`${window.location.origin}/api`);
   }
 
   // Default to production API to avoid localhost calls in deployed environments
-  console.warn('[AgriConnect] VITE_API_URL missing – defaulting to production API');
+  console.warn('[AgriConnect] VITE_API_URL missing and no window origin – defaulting to production API');
   return normalizeApiUrl(PRODUCTION_API_URL);
 };
 

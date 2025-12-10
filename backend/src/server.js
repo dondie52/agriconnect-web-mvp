@@ -25,11 +25,18 @@ const app = express();
 app.set('trust proxy', 1);
 
 // CORS configuration - allow known frontend origins
-const allowedOrigins = [
+const defaultAllowedOrigins = [
   'https://agriconnect-web-mvp.vercel.app',
   'https://agriconnect-web-mvp.onrender.com',
   'http://localhost:5173',
-].filter(Boolean);
+];
+
+const envAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowedOrigins]));
 
 const corsOptions = {
   origin: (origin, callback) => {
@@ -37,11 +44,13 @@ const corsOptions = {
     if (allowedOrigins.includes(origin)) return callback(null, true);
     if (process.env.NODE_ENV !== 'production') return callback(null, true);
     console.warn(`CORS blocked origin: ${origin}`);
-    return callback(new Error('Not allowed by CORS'));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 };
+
+console.log('🔐 Allowed CORS origins:', allowedOrigins.join(', ') || 'none');
 
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
