@@ -38,12 +38,23 @@ export function subscribeTable(table, callback) {
 export function useRealtimeSubscriptions(subscriptions, onUpdate) {
   const queryClient = useQueryClient();
   const channelsRef = useRef([]);
+  const onUpdateRef = useRef(onUpdate);
+
+  // Keep the callback ref updated without triggering effect re-runs
+  useEffect(() => {
+    onUpdateRef.current = onUpdate;
+  }, [onUpdate]);
+
+  // Stringify subscriptions for stable dependency
+  const subscriptionsKey = JSON.stringify(subscriptions);
 
   useEffect(() => {
     if (!supabase) return;
 
+    const parsedSubscriptions = JSON.parse(subscriptionsKey);
+
     // Subscribe to each table
-    channelsRef.current = subscriptions.map(({ table, queryKeys }) => {
+    channelsRef.current = parsedSubscriptions.map(({ table, queryKeys }) => {
       return subscribeTable(table, (payload) => {
         // Invalidate all related query keys
         queryKeys.forEach((key) => {
@@ -51,8 +62,8 @@ export function useRealtimeSubscriptions(subscriptions, onUpdate) {
         });
 
         // Call optional update callback
-        if (onUpdate) {
-          onUpdate({ table, payload });
+        if (onUpdateRef.current) {
+          onUpdateRef.current({ table, payload });
         }
       });
     });
@@ -66,7 +77,7 @@ export function useRealtimeSubscriptions(subscriptions, onUpdate) {
       });
       channelsRef.current = [];
     };
-  }, [queryClient, subscriptions, onUpdate]);
+  }, [queryClient, subscriptionsKey]);
 }
 
 /**

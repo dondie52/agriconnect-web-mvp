@@ -212,16 +212,24 @@ export const useRealtimePrices = (filters = {}, options = {}) => {
     };
   }, [fetchPrices, pollingInterval]);
 
-  // Setup WebSocket connection
+  // Setup WebSocket connection - use refs to avoid dependency issues
+  const connectWebSocketRef = useRef(connectWebSocket);
+  const disconnectWebSocketRef = useRef(disconnectWebSocket);
+  
+  useEffect(() => {
+    connectWebSocketRef.current = connectWebSocket;
+    disconnectWebSocketRef.current = disconnectWebSocket;
+  }, [connectWebSocket, disconnectWebSocket]);
+
   useEffect(() => {
     if (enableWebSocket) {
-      connectWebSocket();
+      connectWebSocketRef.current();
     }
 
     return () => {
-      disconnectWebSocket();
+      disconnectWebSocketRef.current();
     };
-  }, [enableWebSocket, connectWebSocket, disconnectWebSocket]);
+  }, [enableWebSocket]);
 
   // Refetch when filters change
   useEffect(() => {
@@ -237,7 +245,7 @@ export const useRealtimePrices = (filters = {}, options = {}) => {
       // Resume polling and WebSocket
       fetchPrices(true);
       if (enableWebSocket) {
-        connectWebSocket();
+        connectWebSocketRef.current();
       }
     };
     
@@ -260,7 +268,7 @@ export const useRealtimePrices = (filters = {}, options = {}) => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
     };
-  }, [enableWebSocket, fetchPrices, connectWebSocket]);
+  }, [enableWebSocket, fetchPrices]);
 
   return {
     // Data
