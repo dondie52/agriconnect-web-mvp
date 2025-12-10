@@ -3,6 +3,9 @@
  * A marketplace platform connecting farmers to buyers
  * Production-ready with WebSocket support for real-time price updates
  */
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
+
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
