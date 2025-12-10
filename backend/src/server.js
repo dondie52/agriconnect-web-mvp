@@ -24,72 +24,41 @@ const app = express();
 // Trust proxy (for deployment behind reverse proxy)
 app.set('trust proxy', 1);
 
+// CORS configuration - allow known frontend origins
+const defaultAllowedOrigins = [
+  'https://agriconnect-web-mvp.vercel.app',
+  'https://agriconnect-web-mvp.onrender.com',
+  'http://localhost:5173',
+];
+
+const envAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const allowedOrigins = Array.from(new Set([...defaultAllowedOrigins, ...envAllowedOrigins]));
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow non-browser requests
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    if (process.env.NODE_ENV !== 'production') return callback(null, true);
+    console.warn(`CORS blocked origin: ${origin}`);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+};
+
+console.log('🔐 Allowed CORS origins:', allowedOrigins.join(', ') || 'none');
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
-
-// CORS configuration - allow frontend origins
-const deployedHost = process.env.RENDER_EXTERNAL_URL || process.env.RAILWAY_STATIC_URL;
-const defaultOrigins = [
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173',
-  'https://agriconnect-web-mvp.onrender.com',
-  deployedHost
-].filter(Boolean);
-
-const allowedOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-  : defaultOrigins;
-
-const normalizeOrigin = (origin) => {
-  try {
-    const parsed = new URL(origin);
-    return parsed.origin;
-  } catch {
-    return origin.replace(/\/$/, '');
-  }
-};
-
-const corsOptions = {
-  origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-
-    const normalizedOrigin = normalizeOrigin(origin);
-
-    // Allow if origin is in allowed list or matches pattern
-    const isAllowed = allowedOrigins.some(allowed => {
-      const normalizedAllowed = normalizeOrigin(allowed);
-      return normalizedOrigin === normalizedAllowed || normalizedOrigin.endsWith(normalizedAllowed);
-    });
-
-    if (isAllowed) {
-      return callback(null, true);
-    }
-
-    // In development, allow all origins to ease local testing
-    if (process.env.NODE_ENV !== 'production') {
-      return callback(null, true);
-    }
-
-    console.warn(`CORS blocked origin: ${origin}`);
-    callback(null, false);
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  exposedHeaders: ['Content-Range', 'X-Content-Range'],
-  optionsSuccessStatus: 204,
-  maxAge: 86400 // 24 hours
-};
-
-app.use(cors(corsOptions));
-
-// Handle preflight requests explicitly
-app.options('*', cors(corsOptions));
 
 // Request logging
 if (process.env.NODE_ENV !== 'test') {
