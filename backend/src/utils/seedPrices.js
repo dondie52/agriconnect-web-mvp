@@ -3,7 +3,7 @@
  * Seeds realistic Botswana market prices for all crops across key regions
  */
 require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
-const { query, pool } = require('../config/db');
+const { pool } = require('../config/db');
 
 // Realistic base prices for Botswana crops (in BWP/Pula per kg)
 const CROP_PRICES = {
@@ -77,12 +77,12 @@ async function seedPrices() {
   
   try {
     // Get all crops
-    const cropsResult = await query('SELECT id, name FROM crops');
+    const cropsResult = await pool.query('SELECT id, name FROM crops');
     const crops = cropsResult.rows;
     console.log(`Found ${crops.length} crops`);
     
     // Get all regions
-    const regionsResult = await query('SELECT id, name FROM regions');
+    const regionsResult = await pool.query('SELECT id, name FROM regions');
     const regions = regionsResult.rows;
     console.log(`Found ${regions.length} regions`);
     
@@ -103,7 +103,7 @@ async function seedPrices() {
           const previousPrice = generatePreviousPrice(price);
           
           // Use upsert to handle existing entries
-          const result = await query(
+          const result = await pool.query(
             `INSERT INTO prices (crop_id, region_id, price, previous_price, unit, updated_at)
              VALUES ($1, $2, $3, $4, 'kg', NOW())
              ON CONFLICT (crop_id, region_id)

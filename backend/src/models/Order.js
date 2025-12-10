@@ -2,12 +2,12 @@
  * Order Model for AgriConnect
  * Handles order data operations between buyers and farmers
  */
-const { query, getClient } = require('../config/db');
+const { pool } = require('../config/db');
 
 const Order = {
   // Create a new order
   async create({ listing_id, buyer_id, quantity, delivery_preference = 'pickup', notes }) {
-    const client = await getClient();
+    const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
@@ -66,7 +66,7 @@ const Order = {
 
   // Find order by ID
   async findById(id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT o.*, 
               l.crop_id, c.name as crop_name, l.images,
               b.name as buyer_name, b.phone as buyer_phone,
@@ -92,7 +92,7 @@ const Order = {
       throw new Error('Invalid status');
     }
 
-    const client = await getClient();
+    const client = await pool.connect();
     
     try {
       await client.query('BEGIN');
@@ -149,7 +149,7 @@ const Order = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT o.*, 
               c.name as crop_name,
               b.name as buyer_name, b.phone as buyer_phone
@@ -163,7 +163,7 @@ const Order = {
       values
     );
 
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM orders o WHERE ${whereClause.join(' AND ')}`,
       values.slice(0, -2)
     );
@@ -191,7 +191,7 @@ const Order = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    const result = await query(
+    const result = await pool.query(
       `SELECT o.*, 
               c.name as crop_name,
               f.name as farmer_name, f.phone as farmer_phone,
@@ -207,7 +207,7 @@ const Order = {
       values
     );
 
-    const countResult = await query(
+    const countResult = await pool.query(
       `SELECT COUNT(*) FROM orders o WHERE ${whereClause.join(' AND ')}`,
       values.slice(0, -2)
     );
@@ -222,7 +222,7 @@ const Order = {
 
   // Get order statistics
   async getStats(farmer_id) {
-    const result = await query(
+    const result = await pool.query(
       `SELECT 
         COUNT(*) FILTER (WHERE status = 'pending') as pending_orders,
         COUNT(*) FILTER (WHERE status = 'accepted') as accepted_orders,
