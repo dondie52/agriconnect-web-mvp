@@ -30,42 +30,59 @@ app.use(helmet({
 }));
 
 // CORS configuration - allow frontend origins
-const allowedOrigins = process.env.FRONTEND_URL 
+const deployedHost = process.env.RENDER_EXTERNAL_URL || process.env.RAILWAY_STATIC_URL;
+const defaultOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'https://agriconnect-web-mvp.onrender.com',
+  deployedHost
+].filter(Boolean);
+
+const allowedOrigins = process.env.FRONTEND_URL
   ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-  : ['http://localhost:3000', 'http://localhost:3001'];
+  : defaultOrigins;
+
+const normalizeOrigin = (origin) => {
+  try {
+    const parsed = new URL(origin);
+    return parsed.origin;
+  } catch {
+    return origin.replace(/\/$/, '');
+  }
+};
 
 const corsOptions = {
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    
+
+    const normalizedOrigin = normalizeOrigin(origin);
+
     // Allow if origin is in allowed list or matches pattern
-    if (allowedOrigins.some(allowed => origin.includes(allowed.replace(/^https?:\/\//, '')))) {
+    const isAllowed = allowedOrigins.some(allowed => {
+      const normalizedAllowed = normalizeOrigin(allowed);
+      return normalizedOrigin === normalizedAllowed || normalizedOrigin.endsWith(normalizedAllowed);
+    });
+
+    if (isAllowed) {
       return callback(null, true);
     }
-    
-    // In development, allow all origins
+
+    // In development, allow all origins to ease local testing
     if (process.env.NODE_ENV !== 'production') {
       return callback(null, true);
     }
-    
-    // Otherwise, check if origin matches allowed patterns
-    const isAllowed = allowedOrigins.some(allowed => {
-      try {
-        const allowedUrl = new URL(allowed);
-        const originUrl = new URL(origin);
-        return allowedUrl.origin === originUrl.origin;
-      } catch {
-        return origin.includes(allowed);
-      }
-    });
-    
-    callback(isAllowed ? null : new Error('Not allowed by CORS'), isAllowed);
+
+    console.warn(`CORS blocked origin: ${origin}`);
+    callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
   exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  optionsSuccessStatus: 204,
   maxAge: 86400 // 24 hours
 };
 
