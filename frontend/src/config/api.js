@@ -9,23 +9,19 @@ const normalizeApiUrl = (url) => {
   return `${trimmed}/api`;
 };
 
-const PRODUCTION_API_URL = 'https://agriconnect-web-mvp.onrender.com/api';
-
-const resolveApiUrl = () => {
-  const envApiUrl = import.meta.env?.VITE_API_URL;
-  if (envApiUrl) return normalizeApiUrl(envApiUrl);
-
-  // Prefer the current origin (works for both local and same-domain deployments)
+const buildFallbackApiUrl = () => {
   if (typeof window !== 'undefined' && window.location?.origin) {
-    return normalizeApiUrl(`${window.location.origin}/api`);
+    return `${window.location.origin}/api`;
   }
-
-  // Default to production API to avoid localhost calls in deployed environments
-  console.warn('[AgriConnect] VITE_API_URL missing and no window origin – defaulting to production API');
-  return normalizeApiUrl(PRODUCTION_API_URL);
+  return 'http://localhost:5000/api';
 };
 
-export const API_URL = resolveApiUrl();
+const envApiUrl = import.meta.env?.VITE_API_URL;
+export const API_URL = normalizeApiUrl(envApiUrl || buildFallbackApiUrl());
+
+if (!envApiUrl) {
+  console.warn('[AgriConnect] VITE_API_URL missing – falling back to', API_URL);
+}
 
 // Base URL without /api suffix (for WebSocket connections)
 export const API_BASE_URL = API_URL.replace(/\/api$/, '');
