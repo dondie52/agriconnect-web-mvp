@@ -94,6 +94,7 @@ export const useCreateListing = () => {
     mutationFn: (data) => listingsAPI.create(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['listings'] });
+      queryClient.invalidateQueries({ queryKey: ['featuredListings'] }); // Invalidate featured listings for real-time update
       queryClient.invalidateQueries({ queryKey: ['myListings'] });
       queryClient.invalidateQueries({ queryKey: ['listingStats'] });
     },

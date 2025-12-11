@@ -1,123 +1,80 @@
 /**
  * Featured Carousel Component
  * Horizontal snap-scroll slider showcasing featured products
+ * Connected to real-time listings data
  */
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Star, MapPin, Clock } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { listingsAPI } from '../../api';
+import { UPLOAD_URL } from '../../api';
+import { ProductImage } from '../../components/UI';
 
 const FeaturedCarousel = () => {
   const scrollRef = useRef(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  // Placeholder featured products
-  const featuredProducts = [
-    {
-      id: 1,
-      title: 'Premium Organic Maize',
-      price: 850,
-      unit: 'per 50kg bag',
-      image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=300&fit=crop',
-      rating: 4.8,
-      reviews: 124,
-      location: 'Gaborone',
-      seller: 'Thabo Farms',
-      badge: 'Best Seller',
-      badgeColor: 'bg-orange-500',
+  // Fetch featured listings with real-time updates (newest first, limit to 10 for carousel)
+  const { data: listingsData, isLoading } = useQuery({
+    queryKey: ['featuredListings'],
+    queryFn: async () => {
+      const response = await listingsAPI.getAll({
+        page: 1,
+        limit: 10,
+        sort_by: 'created_at',
+        sort_order: 'desc'
+      });
+      return response.data.data;
     },
-    {
-      id: 2,
-      title: 'Fresh Farm Eggs (30 pack)',
-      price: 95,
-      unit: 'per tray',
-      image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&h=300&fit=crop',
-      rating: 4.9,
-      reviews: 89,
-      location: 'Francistown',
-      seller: 'Happy Hens Farm',
-      badge: 'Top Rated',
-      badgeColor: 'bg-green-500',
-    },
-    {
-      id: 3,
-      title: 'Grass-Fed Beef (per kg)',
-      price: 120,
-      unit: 'per kg',
-      image: 'https://images.unsplash.com/photo-1551028150-64b9f398f678?w=400&h=300&fit=crop',
-      rating: 4.7,
-      reviews: 56,
-      location: 'Maun',
-      seller: 'Kalahari Ranch',
-      badge: 'Premium',
-      badgeColor: 'bg-purple-500',
-    },
-    {
-      id: 4,
-      title: 'Fresh Tomatoes (5kg)',
-      price: 45,
-      unit: 'per crate',
-      image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=300&fit=crop',
-      rating: 4.6,
-      reviews: 203,
-      location: 'Kasane',
-      seller: 'Green Valley',
-      badge: 'Fresh Pick',
-      badgeColor: 'bg-red-500',
-    },
-    {
-      id: 5,
-      title: 'Raw Honey (1L Jar)',
-      price: 180,
-      unit: 'per jar',
-      image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=300&fit=crop',
-      rating: 5.0,
-      reviews: 45,
-      location: 'Nata',
-      seller: 'BeeKeep Botswana',
-      badge: 'Organic',
-      badgeColor: 'bg-yellow-500',
-    },
-    {
-      id: 6,
-      title: 'Fresh Milk (5L)',
-      price: 65,
-      unit: 'per container',
-      image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=300&fit=crop',
-      rating: 4.8,
-      reviews: 167,
-      location: 'Lobatse',
-      seller: 'Dairy Dreams',
-      badge: 'Daily Fresh',
-      badgeColor: 'bg-blue-500',
-    },
-    {
-      id: 7,
-      title: 'Butternut Squash (10kg)',
-      price: 75,
-      unit: 'per bag',
-      image: 'https://images.unsplash.com/photo-1570586437263-ab629fccc818?w=400&h=300&fit=crop',
-      rating: 4.5,
-      reviews: 78,
-      location: 'Palapye',
-      seller: 'Sunset Farms',
-      badge: 'Seasonal',
-      badgeColor: 'bg-amber-500',
-    },
-    {
-      id: 8,
-      title: 'Free-Range Chicken',
-      price: 95,
-      unit: 'per bird',
-      image: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&h=300&fit=crop',
-      rating: 4.7,
-      reviews: 134,
-      location: 'Serowe',
-      seller: 'Village Poultry',
-      badge: 'Free Range',
-      badgeColor: 'bg-teal-500',
-    },
-  ];
+    refetchInterval: 10000, // Refresh every 10 seconds for real-time updates
+    refetchOnWindowFocus: true,
+    staleTime: 5000, // Consider data fresh for 5 seconds
+  });
+
+  // Transform listings data to match component format
+  const featuredProducts = useMemo(() => {
+    if (!listingsData?.listings) return [];
+    
+    return listingsData.listings.map((listing) => {
+      // Parse images
+      let images = [];
+      try {
+        if (Array.isArray(listing.images)) {
+          images = listing.images;
+        } else if (typeof listing.images === 'string') {
+          images = JSON.parse(listing.images);
+        }
+      } catch (e) {
+        images = [];
+      }
+      
+      const firstImage = images[0];
+      const imageUrl = firstImage 
+        ? (firstImage.startsWith('http') ? firstImage : `${UPLOAD_URL}/${firstImage}`)
+        : null;
+
+      // Determine badge based on how recent the listing is
+      const createdAt = new Date(listing.created_at);
+      const hoursAgo = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60);
+      const isNew = hoursAgo < 24;
+      
+      return {
+        id: listing.id,
+        title: listing.crop_name,
+        image: imageUrl,
+        seller: listing.farmer_name,
+        location: listing.region_name,
+        rating: 4.5, // Default rating (can be enhanced later with actual ratings)
+        reviews: Math.floor(Math.random() * 50) + 10, // Placeholder reviews
+        price: parseFloat(listing.price).toFixed(2),
+        unit: listing.unit,
+        badge: isNew ? 'New' : listing.crop_category,
+        badgeColor: isNew ? 'bg-green-500' : 'bg-primary-500',
+      };
+    });
+  }, [listingsData]);
 
   const checkScroll = () => {
     if (scrollRef.current) {
@@ -150,7 +107,7 @@ const FeaturedCarousel = () => {
             </h2>
             <span className="hidden sm:inline-flex items-center gap-1 text-sm text-primary-600 font-medium">
               <Clock size={14} />
-              Updated hourly
+              Updated in real-time
             </span>
           </div>
           <Link 
@@ -200,28 +157,52 @@ const FeaturedCarousel = () => {
             className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory 
                      scrollbar-hide pb-2 -mx-4 px-4 md:mx-0 md:px-0"
           >
-            {featuredProducts.map((product) => (
-              <Link
-                key={product.id}
-                to={`/listings/${product.id}`}
-                className="group/card flex-shrink-0 w-[260px] md:w-[280px] snap-start"
-              >
-                <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden 
-                              shadow-card hover:shadow-card-hover transition-all duration-300 
-                              hover:-translate-y-1">
-                  {/* Image Container */}
-                  <div className="relative aspect-[4/3] overflow-hidden">
-                    <img
-                      src={product.image}
-                      alt={product.title}
-                      className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
-                    />
-                    {/* Badge */}
-                    <span className={`absolute top-3 left-3 ${product.badgeColor} text-white 
-                                   text-xs font-semibold px-2.5 py-1 rounded-full shadow-md`}>
-                      {product.badge}
-                    </span>
+            {isLoading ? (
+              // Loading skeleton
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div
+                  key={`skeleton-${idx}`}
+                  className="flex-shrink-0 w-[260px] md:w-[280px] snap-start"
+                >
+                  <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden shadow-card">
+                    <div className="relative aspect-[4/3] overflow-hidden bg-neutral-200 animate-pulse" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 bg-neutral-200 rounded animate-pulse" />
+                      <div className="h-3 bg-neutral-200 rounded w-3/4 animate-pulse" />
+                      <div className="h-3 bg-neutral-200 rounded w-1/2 animate-pulse" />
+                    </div>
                   </div>
+                </div>
+              ))
+            ) : featuredProducts.length === 0 ? (
+              // Empty state
+              <div className="w-full text-center py-8 text-neutral-500">
+                <p>No featured products available at the moment.</p>
+                <p className="text-sm mt-2">Check back soon for new listings!</p>
+              </div>
+            ) : (
+              featuredProducts.map((product) => (
+                <Link
+                  key={product.id}
+                  to={`/listings/${product.id}`}
+                  className="group/card flex-shrink-0 w-[260px] md:w-[280px] snap-start"
+                >
+                  <div className="bg-white rounded-xl border border-neutral-200 overflow-hidden 
+                                shadow-card hover:shadow-card-hover transition-all duration-300 
+                                hover:-translate-y-1">
+                    {/* Image Container */}
+                    <div className="relative aspect-[4/3] overflow-hidden bg-neutral-100">
+                      <ProductImage
+                        src={product.image}
+                        alt={product.title}
+                        className="w-full h-full group-hover/card:scale-105 transition-transform duration-300"
+                      />
+                      {/* Badge */}
+                      <span className={`absolute top-3 left-3 ${product.badgeColor} text-white 
+                                     text-xs font-semibold px-2.5 py-1 rounded-full shadow-md`}>
+                        {product.badge}
+                      </span>
+                    </div>
 
                   {/* Content */}
                   <div className="p-4">
@@ -266,7 +247,8 @@ const FeaturedCarousel = () => {
                   </div>
                 </div>
               </Link>
-            ))}
+              ))
+            )}
           </div>
         </div>
       </div>
