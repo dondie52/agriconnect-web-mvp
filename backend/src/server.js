@@ -17,6 +17,7 @@ const path = require('path');
 
 // Import routes
 const routes = require('./routes');
+const cartRoutes = require('./routes/cartRoutes');
 
 // Initialize Express app
 const app = express();
@@ -91,6 +92,7 @@ app.get('/health', (req, res) => {
 });
 
 // API routes
+app.use('/api/cart', cartRoutes);
 app.use('/api', routes);
 
 // Root endpoint
