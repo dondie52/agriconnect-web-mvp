@@ -119,7 +119,7 @@ const requestValidation = [
   validate
 ];
 
-// Order validation
+// Order validation (legacy single item)
 const orderValidation = [
   body('listing_id')
     .notEmpty().withMessage('Listing ID is required')
@@ -130,6 +130,109 @@ const orderValidation = [
   body('delivery_preference')
     .optional()
     .isIn(['pickup', 'delivery']).withMessage('Invalid delivery preference'),
+  validate
+];
+
+// Checkout validation (cart-based with enhanced delivery)
+const checkoutValidation = [
+  // Delivery type validation
+  body('delivery_type')
+    .optional()
+    .isIn(['pickup', 'delivery']).withMessage('Invalid delivery type. Must be pickup or delivery'),
+  body('delivery_preference')
+    .optional()
+    .isIn(['pickup', 'delivery']).withMessage('Invalid delivery preference'),
+  
+  // Address validation - required for delivery
+  body('address_text')
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage('Address must be under 500 characters'),
+  body('delivery_address')
+    .optional()
+    .trim()
+    .isLength({ max: 500 }).withMessage('Delivery address must be under 500 characters'),
+  
+  // Coordinate validation - latitude
+  body('latitude')
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      const lat = parseFloat(value);
+      if (isNaN(lat) || lat < -90 || lat > 90) {
+        throw new Error('Latitude must be between -90 and 90');
+      }
+      return true;
+    }),
+  
+  // Coordinate validation - longitude
+  body('longitude')
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      const lng = parseFloat(value);
+      if (isNaN(lng) || lng < -180 || lng > 180) {
+        throw new Error('Longitude must be between -180 and 180');
+      }
+      return true;
+    }),
+  
+  // Phone number validation
+  body('phone_number')
+    .optional()
+    .trim()
+    .custom((value) => {
+      if (!value || value === '') return true;
+      // Allow various phone formats including international
+      const phoneRegex = /^[+]?[\d\s()-]{7,20}$/;
+      if (!phoneRegex.test(value)) {
+        throw new Error('Invalid phone number format');
+      }
+      return true;
+    }),
+  
+  // Delivery fee validation
+  body('delivery_fee')
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      const fee = parseFloat(value);
+      if (isNaN(fee) || fee < 0) {
+        throw new Error('Delivery fee must be a non-negative number');
+      }
+      return true;
+    }),
+  
+  // Total amount validation
+  body('total_amount')
+    .optional({ nullable: true })
+    .custom((value) => {
+      if (value === null || value === undefined || value === '') return true;
+      const amount = parseFloat(value);
+      if (isNaN(amount) || amount <= 0) {
+        throw new Error('Total amount must be a positive number');
+      }
+      return true;
+    }),
+  
+  // Notes validation
+  body('notes')
+    .optional()
+    .trim()
+    .isLength({ max: 1000 }).withMessage('Notes must be under 1000 characters'),
+  
+  // Custom validation to ensure delivery has required fields
+  body().custom((value, { req }) => {
+    const deliveryType = req.body.delivery_type || req.body.delivery_preference;
+    if (deliveryType === 'delivery') {
+      const address = req.body.address_text || req.body.delivery_address;
+      if (!address || !address.trim()) {
+        throw new Error('Delivery address is required for delivery orders');
+      }
+    }
+    return true;
+  }),
+  
   validate
 ];
 
@@ -162,6 +265,7 @@ module.exports = {
   priceValidation,
   requestValidation,
   orderValidation,
+  checkoutValidation,
   cropPlanValidation,
   idParamValidation
 };

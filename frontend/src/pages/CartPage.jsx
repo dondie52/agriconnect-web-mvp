@@ -1,10 +1,11 @@
 /**
  * Cart Page for AgriConnect
- * Shopping cart with items, quantity editing, and checkout
+ * Shopping cart with items, quantity editing, and enhanced checkout with delivery options
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart, useUpdateCartItem, useRemoveCartItem, useCheckout } from '../hooks/useApi';
+import { useAuth } from '../context/AuthContext';
 import { Layout } from '../components/Layout';
 import { 
   Card, 
@@ -13,6 +14,7 @@ import {
   Button, 
   Modal,
   Textarea,
+  Input,
   ProductImage
 } from '../components/UI';
 import { 
@@ -26,10 +28,14 @@ import {
   ShoppingBag,
   Truck,
   Store,
-  AlertCircle
+  AlertCircle,
+  Phone,
+  Home,
+  Calculator
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { UPLOAD_URL } from '../api';
+import LocationPicker from '../components/LocationPicker';
 
 // Helper to get image URL
 const getImageUrl = (images) => {
@@ -50,8 +56,46 @@ const getImageUrl = (images) => {
   return null;
 };
 
+// Delivery fee calculation constants
+const DELIVERY_BASE_FEE = 50; // P50 base fee
+const DELIVERY_PER_KM_RATE = 2; // P2 per km
+const MIN_DELIVERY_FEE = 50; // Minimum P50
+const MAX_DELIVERY_FEE = 500; // Maximum P500
+
+// Reference point for delivery fee calculation (Gaborone center)
+const REFERENCE_POINT = { lat: -24.6282, lng: 25.9231 };
+
+// Haversine formula to calculate distance between two coordinates
+const calculateDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Earth's radius in km
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+    Math.sin(dLon/2) * Math.sin(dLon/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  return R * c;
+};
+
+// Calculate delivery fee based on distance
+const calculateDeliveryFee = (lat, lng) => {
+  if (!lat || !lng) return MIN_DELIVERY_FEE;
+  
+  const distance = calculateDistance(
+    REFERENCE_POINT.lat, 
+    REFERENCE_POINT.lng, 
+    lat, 
+    lng
+  );
+  
+  const fee = DELIVERY_BASE_FEE + (distance * DELIVERY_PER_KM_RATE);
+  return Math.min(Math.max(Math.round(fee * 100) / 100, MIN_DELIVERY_FEE), MAX_DELIVERY_FEE);
+};
+
 const CartPage = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: cart, isLoading, refetch } = useCart();
   const updateCartItem = useUpdateCartItem();
   const removeCartItem = useRemoveCartItem();
@@ -59,14 +103,38 @@ const CartPage = () => {
 
   const [checkoutModal, setCheckoutModal] = useState(false);
   const [checkoutData, setCheckoutData] = useState({
-    delivery_preference: 'pickup',
-    delivery_address: '',
+    delivery_type: 'pickup',
+    address_text: '',
+    latitude: null,
+    longitude: null,
+    phone_number: '',
     notes: ''
   });
 
+  // Initialize phone number from user profile
+  useEffect(() => {
+    if (user?.phone && !checkoutData.phone_number) {
+      setCheckoutData(prev => ({
+        ...prev,
+        phone_number: user.phone
+      }));
+    }
+  }, [user]);
+
   const items = cart?.items || [];
-  const totalPrice = cart?.totalPrice || 0;
+  const itemsTotal = cart?.totalPrice || 0;
   const itemCount = cart?.itemCount || 0;
+
+  // Calculate delivery fee based on selected location
+  const deliveryFee = useMemo(() => {
+    if (checkoutData.delivery_type !== 'delivery') return 0;
+    return calculateDeliveryFee(checkoutData.latitude, checkoutData.longitude);
+  }, [checkoutData.delivery_type, checkoutData.latitude, checkoutData.longitude]);
+
+  // Calculate total amount (items + delivery fee)
+  const totalAmount = useMemo(() => {
+    return itemsTotal + deliveryFee;
+  }, [itemsTotal, deliveryFee]);
 
   const handleQuantityChange = async (cartItemId, newQuantity, maxQuantity) => {
     if (newQuantity <= 0) {
@@ -93,9 +161,57 @@ const CartPage = () => {
     }
   };
 
+  const handleLocationChange = ({ lat, lng }) => {
+    setCheckoutData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng
+    }));
+  };
+
+  const handleAddressChange = (address) => {
+    setCheckoutData(prev => ({
+      ...prev,
+      address_text: address
+    }));
+  };
+
+  const validateCheckout = () => {
+    if (checkoutData.delivery_type === 'delivery') {
+      if (!checkoutData.address_text.trim()) {
+        toast.error('Please enter your delivery address');
+        return false;
+      }
+      if (!checkoutData.latitude || !checkoutData.longitude) {
+        toast.error('Please select your location on the map');
+        return false;
+      }
+    }
+    if (!checkoutData.phone_number.trim()) {
+      toast.error('Please enter your phone number');
+      return false;
+    }
+    return true;
+  };
+
   const handleCheckout = async () => {
+    if (!validateCheckout()) return;
+
     try {
-      await checkout.mutateAsync(checkoutData);
+      const orderData = {
+        delivery_type: checkoutData.delivery_type,
+        delivery_preference: checkoutData.delivery_type, // For backward compatibility
+        address_text: checkoutData.delivery_type === 'delivery' ? checkoutData.address_text : null,
+        delivery_address: checkoutData.delivery_type === 'delivery' ? checkoutData.address_text : null, // For backward compatibility
+        latitude: checkoutData.delivery_type === 'delivery' ? checkoutData.latitude : null,
+        longitude: checkoutData.delivery_type === 'delivery' ? checkoutData.longitude : null,
+        phone_number: checkoutData.phone_number,
+        delivery_fee: deliveryFee,
+        total_amount: totalAmount,
+        notes: checkoutData.notes
+      };
+
+      await checkout.mutateAsync(orderData);
       toast.success('Order placed successfully!');
       setCheckoutModal(false);
       navigate('/buyer/my-orders');
@@ -108,6 +224,19 @@ const CartPage = () => {
         refetch();
       }
     }
+  };
+
+  const openCheckoutModal = () => {
+    // Reset delivery fields when opening modal
+    setCheckoutData(prev => ({
+      ...prev,
+      delivery_type: 'pickup',
+      address_text: '',
+      latitude: null,
+      longitude: null,
+      notes: ''
+    }));
+    setCheckoutModal(true);
   };
 
   if (isLoading) {
@@ -268,23 +397,23 @@ const CartPage = () => {
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-neutral-500">Items ({itemCount})</span>
-                    <span>P{totalPrice.toFixed(2)}</span>
+                    <span>P{itemsTotal.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-neutral-500">Delivery</span>
-                    <span className="text-green-600">Free</span>
+                    <span className="text-neutral-500">Calculated at checkout</span>
                   </div>
                 </div>
 
                 <div className="border-t my-4"></div>
 
                 <div className="flex justify-between text-lg font-semibold">
-                  <span>Total</span>
-                  <span className="text-primary-600">P{totalPrice.toFixed(2)}</span>
+                  <span>Subtotal</span>
+                  <span className="text-primary-600">P{itemsTotal.toFixed(2)}</span>
                 </div>
 
                 <Button
-                  onClick={() => setCheckoutModal(true)}
+                  onClick={openCheckoutModal}
                   disabled={items.some(i => i.listing_status !== 'active')}
                   className="w-full mt-6"
                 >
@@ -306,18 +435,132 @@ const CartPage = () => {
           </div>
         )}
 
-        {/* Checkout Modal */}
+        {/* Enhanced Checkout Modal */}
         <Modal
           isOpen={checkoutModal}
           onClose={() => setCheckoutModal(false)}
           title="Checkout"
-          size="md"
+          size="lg"
         >
           <div className="space-y-6">
+            {/* Delivery Type Selection */}
+            <div>
+              <label className="label">Delivery Method</label>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setCheckoutData(prev => ({ ...prev, delivery_type: 'pickup' }))}
+                  className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2
+                            ${checkoutData.delivery_type === 'pickup' 
+                              ? 'border-primary-500 bg-primary-50' 
+                              : 'border-neutral-200 hover:border-neutral-300'}`}
+                >
+                  <Store size={24} className={checkoutData.delivery_type === 'pickup' ? 'text-primary-500' : 'text-neutral-400'} />
+                  <span className={checkoutData.delivery_type === 'pickup' ? 'font-medium text-primary-700' : 'text-neutral-600'}>
+                    Pickup
+                  </span>
+                  <span className="text-xs text-neutral-500">Collect from farmer</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCheckoutData(prev => ({ ...prev, delivery_type: 'delivery' }))}
+                  className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2
+                            ${checkoutData.delivery_type === 'delivery' 
+                              ? 'border-primary-500 bg-primary-50' 
+                              : 'border-neutral-200 hover:border-neutral-300'}`}
+                >
+                  <Truck size={24} className={checkoutData.delivery_type === 'delivery' ? 'text-primary-500' : 'text-neutral-400'} />
+                  <span className={checkoutData.delivery_type === 'delivery' ? 'font-medium text-primary-700' : 'text-neutral-600'}>
+                    Delivery
+                  </span>
+                  <span className="text-xs text-neutral-500">To your location</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Phone Number */}
+            <div>
+              <label className="label flex items-center gap-2">
+                <Phone size={16} className="text-primary-500" />
+                Contact Phone Number
+              </label>
+              <Input
+                type="tel"
+                value={checkoutData.phone_number}
+                onChange={(e) => setCheckoutData(prev => ({ ...prev, phone_number: e.target.value }))}
+                placeholder="Enter your phone number"
+              />
+              <p className="text-xs text-neutral-500 mt-1">
+                We'll use this number to contact you about your order
+              </p>
+            </div>
+
+            {/* Delivery Address Section (shown only for delivery) */}
+            {checkoutData.delivery_type === 'delivery' && (
+              <>
+                {/* Address Text Input */}
+                <div>
+                  <label className="label flex items-center gap-2">
+                    <Home size={16} className="text-primary-500" />
+                    Delivery Address
+                  </label>
+                  <Textarea
+                    value={checkoutData.address_text}
+                    onChange={(e) => setCheckoutData(prev => ({ ...prev, address_text: e.target.value }))}
+                    placeholder="Enter your full delivery address (street, area, city, postal code)"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Map Location Picker */}
+                <LocationPicker
+                  position={
+                    checkoutData.latitude && checkoutData.longitude
+                      ? { lat: checkoutData.latitude, lng: checkoutData.longitude }
+                      : null
+                  }
+                  onPositionChange={handleLocationChange}
+                  onAddressChange={handleAddressChange}
+                />
+
+                {/* Delivery Fee Display */}
+                <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Calculator size={18} className="text-blue-600" />
+                      <span className="font-medium text-blue-800">Delivery Fee</span>
+                    </div>
+                    <span className="text-lg font-bold text-blue-700">
+                      P{deliveryFee.toFixed(2)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Based on distance from our distribution center
+                  </p>
+                </div>
+              </>
+            )}
+
+            {/* Order Notes */}
+            <div>
+              <label className="label">Order Notes (Optional)</label>
+              <Textarea
+                value={checkoutData.notes}
+                onChange={(e) => setCheckoutData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Any special requests or delivery instructions..."
+                rows={2}
+              />
+            </div>
+
             {/* Order Summary */}
             <div className="p-4 bg-neutral-50 rounded-lg">
-              <h4 className="font-medium mb-3">Order Summary</h4>
-              <div className="space-y-2 text-sm">
+              <h4 className="font-medium mb-3 flex items-center gap-2">
+                <Package size={18} className="text-primary-500" />
+                Order Summary
+              </h4>
+              
+              {/* Items */}
+              <div className="space-y-2 text-sm max-h-32 overflow-y-auto">
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between">
                     <span className="text-neutral-600">
@@ -327,67 +570,30 @@ const CartPage = () => {
                   </div>
                 ))}
               </div>
-              <div className="border-t mt-3 pt-3 flex justify-between font-semibold">
-                <span>Total</span>
-                <span className="text-primary-600">P{totalPrice.toFixed(2)}</span>
-              </div>
-            </div>
-
-            {/* Delivery Preference */}
-            <div>
-              <label className="label">Delivery Preference</label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setCheckoutData(prev => ({ ...prev, delivery_preference: 'pickup' }))}
-                  className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2
-                            ${checkoutData.delivery_preference === 'pickup' 
-                              ? 'border-primary-500 bg-primary-50' 
-                              : 'border-neutral-200 hover:border-neutral-300'}`}
-                >
-                  <Store size={24} className={checkoutData.delivery_preference === 'pickup' ? 'text-primary-500' : 'text-neutral-400'} />
-                  <span className={checkoutData.delivery_preference === 'pickup' ? 'font-medium text-primary-700' : 'text-neutral-600'}>
-                    Pickup
+              
+              <div className="border-t mt-3 pt-3 space-y-2">
+                {/* Items Subtotal */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-500">Items Subtotal</span>
+                  <span>P{itemsTotal.toFixed(2)}</span>
+                </div>
+                
+                {/* Delivery Fee */}
+                <div className="flex justify-between text-sm">
+                  <span className="text-neutral-500">Delivery Fee</span>
+                  <span>
+                    {checkoutData.delivery_type === 'delivery' 
+                      ? `P${deliveryFee.toFixed(2)}` 
+                      : 'Free (Pickup)'}
                   </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCheckoutData(prev => ({ ...prev, delivery_preference: 'delivery' }))}
-                  className={`p-4 rounded-lg border-2 transition-colors flex flex-col items-center gap-2
-                            ${checkoutData.delivery_preference === 'delivery' 
-                              ? 'border-primary-500 bg-primary-50' 
-                              : 'border-neutral-200 hover:border-neutral-300'}`}
-                >
-                  <Truck size={24} className={checkoutData.delivery_preference === 'delivery' ? 'text-primary-500' : 'text-neutral-400'} />
-                  <span className={checkoutData.delivery_preference === 'delivery' ? 'font-medium text-primary-700' : 'text-neutral-600'}>
-                    Delivery
-                  </span>
-                </button>
+                </div>
+                
+                {/* Total */}
+                <div className="flex justify-between font-semibold text-lg pt-2 border-t">
+                  <span>Total</span>
+                  <span className="text-primary-600">P{totalAmount.toFixed(2)}</span>
+                </div>
               </div>
-            </div>
-
-            {/* Delivery Address (if delivery selected) */}
-            {checkoutData.delivery_preference === 'delivery' && (
-              <div>
-                <label className="label">Delivery Address</label>
-                <Textarea
-                  value={checkoutData.delivery_address}
-                  onChange={(e) => setCheckoutData(prev => ({ ...prev, delivery_address: e.target.value }))}
-                  placeholder="Enter your delivery address..."
-                  rows={2}
-                />
-              </div>
-            )}
-
-            {/* Notes */}
-            <div>
-              <label className="label">Order Notes (Optional)</label>
-              <Textarea
-                value={checkoutData.notes}
-                onChange={(e) => setCheckoutData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Any special requests or instructions..."
-                rows={2}
-              />
             </div>
 
             {/* Actions */}

@@ -1,7 +1,7 @@
 /**
  * Order Model for AgriConnect
  * Handles order data operations between buyers and farmers
- * Updated for cart-based checkout system
+ * Updated for cart-based checkout system with delivery features
  */
 const { pool } = require('../config/db');
 
@@ -9,8 +9,21 @@ const Order = {
   /**
    * Create order from cart (checkout)
    * Converts all cart items into order_items and creates a single order
+   * Now supports enhanced delivery options with address, coordinates, and delivery fee
    */
-  async createFromCart({ buyer_id, delivery_preference = 'pickup', delivery_address = null, notes = null }) {
+  async createFromCart({ 
+    buyer_id, 
+    delivery_type = 'pickup',
+    delivery_preference = 'pickup', // For backward compatibility
+    address_text = null,
+    delivery_address = null, // For backward compatibility
+    latitude = null,
+    longitude = null,
+    phone_number = null,
+    delivery_fee = 0,
+    total_amount = null,
+    notes = null 
+  }) {
     const client = await pool.connect();
     
     try {
@@ -40,7 +53,7 @@ const Order = {
       }
 
       // Validate all cart items
-      let totalPrice = 0;
+      let itemsTotal = 0;
       const orderItems = [];
 
       for (const item of cartResult.rows) {
@@ -52,7 +65,7 @@ const Order = {
         }
         
         const itemTotal = item.price * item.quantity;
-        totalPrice += itemTotal;
+        itemsTotal += itemTotal;
         
         orderItems.push({
           listing_id: item.listing_id,
@@ -64,12 +77,49 @@ const Order = {
         });
       }
 
-      // Create the order
+      // Calculate total amount (items + delivery fee)
+      const calculatedTotalAmount = total_amount || (itemsTotal + (delivery_fee || 0));
+      
+      // Use delivery_type or fall back to delivery_preference for backward compatibility
+      const finalDeliveryType = delivery_type || delivery_preference || 'pickup';
+      
+      // Use address_text or fall back to delivery_address for backward compatibility
+      const finalAddressText = address_text || delivery_address || null;
+
+      // Create the order with enhanced delivery fields
       const orderResult = await client.query(
-        `INSERT INTO orders (buyer_id, total_price, delivery_preference, delivery_address, notes, status, created_at)
-         VALUES ($1, $2, $3, $4, $5, 'pending', NOW())
+        `INSERT INTO orders (
+          buyer_id, 
+          total_price, 
+          total_amount,
+          delivery_preference,
+          delivery_type,
+          delivery_address,
+          address_text,
+          latitude,
+          longitude,
+          phone_number,
+          delivery_fee,
+          notes, 
+          status, 
+          created_at
+        )
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, 'pending', NOW())
          RETURNING *`,
-        [buyer_id, totalPrice, delivery_preference, delivery_address, notes]
+        [
+          buyer_id, 
+          itemsTotal, // total_price (items only, for backward compatibility)
+          calculatedTotalAmount, // total_amount (items + delivery fee)
+          finalDeliveryType, // delivery_preference (backward compatibility)
+          finalDeliveryType, // delivery_type
+          finalAddressText, // delivery_address (backward compatibility)
+          finalAddressText, // address_text
+          latitude,
+          longitude,
+          phone_number,
+          delivery_fee || 0,
+          notes
+        ]
       );
 
       const order = orderResult.rows[0];
@@ -145,8 +195,8 @@ const Order = {
 
       // Create order
       const orderResult = await client.query(
-        `INSERT INTO orders (buyer_id, total_price, delivery_preference, notes, status, created_at)
-         VALUES ($1, $2, $3, $4, 'pending', NOW())
+        `INSERT INTO orders (buyer_id, total_price, total_amount, delivery_preference, delivery_type, notes, status, created_at)
+         VALUES ($1, $2, $2, $3, $3, $4, 'pending', NOW())
          RETURNING *`,
         [buyer_id, total_price, delivery_preference, notes]
       );
@@ -183,9 +233,16 @@ const Order = {
 
   // Find order by ID with all items
   async findById(id) {
-    // Get order details
+    // Get order details with enhanced delivery fields
     const orderResult = await pool.query(
       `SELECT o.*, 
+              o.total_amount,
+              o.address_text,
+              o.latitude,
+              o.longitude,
+              o.phone_number,
+              o.delivery_type,
+              o.delivery_fee,
               b.name as buyer_name, b.phone as buyer_phone
        FROM orders o
        JOIN users b ON o.buyer_id = b.id
@@ -359,10 +416,17 @@ const Order = {
     const offset = (page - 1) * limit;
     values.push(limit, offset);
 
-    // Get distinct orders that have items from this farmer
+    // Get distinct orders that have items from this farmer with enhanced delivery fields
     const result = await pool.query(
       `SELECT DISTINCT ON (o.id)
               o.*,
+              o.total_amount,
+              o.address_text,
+              o.latitude,
+              o.longitude,
+              o.phone_number,
+              o.delivery_type,
+              o.delivery_fee,
               b.name as buyer_name, b.phone as buyer_phone,
               (SELECT json_agg(json_build_object(
                 'id', oi2.id,
@@ -405,7 +469,7 @@ const Order = {
     };
   },
 
-  // Get orders for buyer
+  // Get orders for buyer with enhanced delivery fields
   async findByBuyer(buyer_id, { status, page = 1, limit = 10 }) {
     let whereClause = ['o.buyer_id = $1'];
     let values = [buyer_id];
@@ -422,6 +486,13 @@ const Order = {
 
     const result = await pool.query(
       `SELECT o.*,
+              o.total_amount,
+              o.address_text,
+              o.latitude,
+              o.longitude,
+              o.phone_number,
+              o.delivery_type,
+              o.delivery_fee,
               (SELECT json_agg(json_build_object(
                 'id', oi.id,
                 'listing_id', oi.listing_id,

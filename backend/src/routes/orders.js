@@ -1,18 +1,18 @@
 /**
  * Order Routes for AgriConnect
- * Updated for cart-based checkout system
+ * Updated for cart-based checkout system with enhanced delivery
  */
 const express = require('express');
 const router = express.Router();
 const orderController = require('../controllers/orderController');
 const { auth, authorize } = require('../middleware/auth');
-const { orderValidation, idParamValidation } = require('../middleware/validation');
+const { orderValidation, checkoutValidation, idParamValidation } = require('../middleware/validation');
 
 // All routes require authentication
 router.use(auth);
 
-// Checkout - create order from cart
-router.post('/create', authorize('buyer', 'admin'), orderController.createFromCart);
+// Checkout - create order from cart with enhanced delivery validation
+router.post('/create', authorize('buyer', 'admin'), checkoutValidation, orderController.createFromCart);
 
 // Legacy - create single item order (backward compatibility)
 router.post('/', authorize('buyer', 'admin'), orderValidation, orderController.create);

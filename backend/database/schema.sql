@@ -117,23 +117,51 @@ CREATE INDEX idx_cart_items_listing ON cart_items(listing_id);
 -- =====================================================
 -- ORDERS TABLE
 -- Orders placed by buyers (created during checkout)
+-- Enhanced with delivery location, phone, and fee tracking
 -- =====================================================
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     buyer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    total_price DECIMAL(12, 2) NOT NULL,
+    
+    -- Pricing fields
+    total_price DECIMAL(12, 2) NOT NULL,                -- Items total (for backward compatibility)
+    total_amount DECIMAL(12, 2),                         -- Final total (items + delivery fee)
+    delivery_fee DECIMAL(10, 2) DEFAULT 0,              -- Delivery fee based on distance
+    
+    -- Delivery preference (backward compatibility)
     delivery_preference VARCHAR(20) DEFAULT 'pickup' CHECK (delivery_preference IN ('pickup', 'delivery')),
-    delivery_address TEXT,
+    delivery_address TEXT,                               -- Legacy address field
+    
+    -- Enhanced delivery fields
+    delivery_type VARCHAR(20) DEFAULT 'pickup' CHECK (delivery_type IN ('pickup', 'delivery')),
+    address_text TEXT,                                   -- Full delivery address as text
+    latitude DECIMAL(10, 8) CHECK (latitude IS NULL OR (latitude >= -90 AND latitude <= 90)),
+    longitude DECIMAL(11, 8) CHECK (longitude IS NULL OR (longitude >= -180 AND longitude <= 180)),
+    
+    -- Contact information
+    phone_number VARCHAR(20),                            -- Contact phone for the order
+    
+    -- Order details
     notes TEXT,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'completed', 'cancelled')),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP
 );
 
-COMMENT ON TABLE orders IS 'Orders placed by buyers during checkout';
+COMMENT ON TABLE orders IS 'Orders placed by buyers during checkout with enhanced delivery tracking';
+COMMENT ON COLUMN orders.total_price IS 'Items subtotal (for backward compatibility)';
+COMMENT ON COLUMN orders.total_amount IS 'Final total including items and delivery fee';
+COMMENT ON COLUMN orders.delivery_fee IS 'Delivery fee calculated based on distance';
+COMMENT ON COLUMN orders.delivery_type IS 'Type of delivery: pickup or delivery';
+COMMENT ON COLUMN orders.address_text IS 'Full delivery address as text';
+COMMENT ON COLUMN orders.latitude IS 'Latitude coordinate for delivery location';
+COMMENT ON COLUMN orders.longitude IS 'Longitude coordinate for delivery location';
+COMMENT ON COLUMN orders.phone_number IS 'Contact phone number for the order';
+
 CREATE INDEX idx_orders_buyer ON orders(buyer_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_created ON orders(created_at DESC);
+CREATE INDEX idx_orders_delivery_type ON orders(delivery_type);
 
 -- =====================================================
 -- ORDER_ITEMS TABLE

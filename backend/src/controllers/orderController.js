@@ -1,7 +1,7 @@
 /**
  * Order Controller for AgriConnect
  * Handles order operations between buyers and farmers
- * Updated for cart-based checkout system
+ * Updated for cart-based checkout system with enhanced delivery features
  */
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
@@ -11,12 +11,80 @@ const Listing = require('../models/Listing');
 
 const orderController = {
   /**
-   * Create order from cart (checkout)
+   * Create order from cart (checkout) with enhanced delivery options
    * POST /api/orders/create
    */
   async createFromCart(req, res) {
     try {
-      const { delivery_preference, delivery_address, notes } = req.body;
+      const { 
+        delivery_type,
+        delivery_preference, // For backward compatibility
+        address_text,
+        delivery_address, // For backward compatibility
+        latitude,
+        longitude,
+        phone_number,
+        delivery_fee,
+        total_amount,
+        notes 
+      } = req.body;
+
+      // Determine final delivery type
+      const finalDeliveryType = delivery_type || delivery_preference || 'pickup';
+
+      // Validate delivery-specific fields
+      if (finalDeliveryType === 'delivery') {
+        const finalAddress = address_text || delivery_address;
+        
+        if (!finalAddress || !finalAddress.trim()) {
+          return res.status(400).json({
+            success: false,
+            message: 'Delivery address is required for delivery orders'
+          });
+        }
+
+        if (latitude === undefined || latitude === null || longitude === undefined || longitude === null) {
+          return res.status(400).json({
+            success: false,
+            message: 'Location coordinates are required for delivery orders'
+          });
+        }
+
+        // Validate coordinate ranges
+        if (latitude < -90 || latitude > 90) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid latitude. Must be between -90 and 90'
+          });
+        }
+
+        if (longitude < -180 || longitude > 180) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid longitude. Must be between -180 and 180'
+          });
+        }
+      }
+
+      // Validate phone number if provided
+      if (phone_number && phone_number.trim()) {
+        // Basic phone validation (allows various formats)
+        const phoneRegex = /^[+]?[\d\s()-]{7,20}$/;
+        if (!phoneRegex.test(phone_number.trim())) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid phone number format'
+          });
+        }
+      }
+
+      // Validate delivery fee if provided
+      if (delivery_fee !== undefined && delivery_fee !== null && delivery_fee < 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Delivery fee cannot be negative'
+        });
+      }
 
       // Validate cart first
       const validation = await Cart.validateCart(req.user.id);
@@ -37,11 +105,18 @@ const orderController = {
         });
       }
 
-      // Create order from cart
+      // Create order from cart with enhanced delivery fields
       const order = await Order.createFromCart({
         buyer_id: req.user.id,
-        delivery_preference: delivery_preference || 'pickup',
-        delivery_address,
+        delivery_type: finalDeliveryType,
+        delivery_preference: finalDeliveryType, // For backward compatibility
+        address_text: address_text || delivery_address,
+        delivery_address: address_text || delivery_address, // For backward compatibility
+        latitude: finalDeliveryType === 'delivery' ? latitude : null,
+        longitude: finalDeliveryType === 'delivery' ? longitude : null,
+        phone_number: phone_number || req.user.phone || null,
+        delivery_fee: finalDeliveryType === 'delivery' ? (delivery_fee || 0) : 0,
+        total_amount,
         notes
       });
 
