@@ -146,12 +146,24 @@ export const listingsAPI = {
 // Orders API
 export const ordersAPI = {
   create: (data) => api.post('/orders', data),
+  checkout: (data) => api.post('/orders/create', data),
   getById: (id) => api.get(`/orders/${id}`),
   updateStatus: (id, status) => api.put(`/orders/${id}/status`, { status }),
   getFarmerOrders: (params) => api.get('/orders/farmer/my-orders', { params }),
   getBuyerOrders: (params) => api.get('/orders/buyer/my-orders', { params }),
   getStats: () => api.get('/orders/farmer/stats'),
   cancel: (id) => api.post(`/orders/${id}/cancel`),
+};
+
+// Cart API
+export const cartAPI = {
+  getCart: () => api.get('/cart'),
+  addItem: (data) => api.post('/cart/add', data),
+  updateItem: (id, quantity) => api.put(`/cart/${id}`, { quantity }),
+  removeItem: (id) => api.delete(`/cart/${id}`),
+  clearCart: () => api.delete('/cart'),
+  getCount: () => api.get('/cart/count'),
+  validate: () => api.get('/cart/validate'),
 };
 
 // Prices API

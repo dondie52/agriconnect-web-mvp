@@ -1,12 +1,12 @@
 /**
  * My Orders Page for AgriConnect
- * Shows orders placed by buyers
+ * Shows orders placed by buyers with cancel functionality
  */
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useBuyerOrders } from '../hooks/useApi';
+import { useBuyerOrders, useCancelOrder } from '../hooks/useApi';
 import { Layout } from '../components/Layout';
-import { Card, PageLoading, EmptyState, Badge } from '../components/UI';
+import { Card, PageLoading, EmptyState, Badge, Button, Modal } from '../components/UI';
 import { 
   Package, 
   Clock, 
@@ -16,8 +16,12 @@ import {
   ShoppingBag,
   MapPin,
   Phone,
-  Calendar
+  Calendar,
+  ShoppingCart,
+  AlertTriangle,
+  X
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 const statusConfig = {
   pending: { label: 'Pending', color: 'bg-yellow-100 text-yellow-700', icon: Clock },
@@ -30,6 +34,10 @@ const statusConfig = {
 const MyOrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('');
   const { data: ordersData, isLoading, error, refetch } = useBuyerOrders({ status: statusFilter || undefined });
+  const cancelOrder = useCancelOrder();
+  
+  const [cancelModal, setCancelModal] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState(null);
 
   const orders = ordersData?.orders || [];
 
@@ -45,6 +53,25 @@ const MyOrdersPage = () => {
   const formatPrice = (price) => {
     const num = Number(price);
     return isNaN(num) ? '0.00' : num.toFixed(2);
+  };
+
+  const handleCancelClick = (order) => {
+    setOrderToCancel(order);
+    setCancelModal(true);
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!orderToCancel) return;
+    
+    try {
+      await cancelOrder.mutateAsync(orderToCancel.id);
+      toast.success('Order cancelled successfully');
+      setCancelModal(false);
+      setOrderToCancel(null);
+      refetch();
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to cancel order');
+    }
   };
 
   return (
@@ -117,87 +144,167 @@ const MyOrdersPage = () => {
             {orders.map((order) => {
               const status = statusConfig[order.status] || statusConfig.pending;
               const StatusIcon = status.icon;
+              const items = order.items || [];
 
               if (!order || !order.id) return null;
 
               return (
                 <Card key={order.id} className="hover:shadow-md transition-shadow">
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    {/* Order Info */}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
+                  {/* Order Header */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <ShoppingCart size={20} className="text-primary-600" />
+                      </div>
+                      <div>
                         <h3 className="font-semibold text-lg text-neutral-800">
-                          {order.crop_name || 'Unknown Crop'}
+                          Order #{order.id}
                         </h3>
-                        <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${status.color}`}>
-                          <StatusIcon size={12} />
-                          {status.label}
-                        </span>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                        <div className="flex items-center gap-2 text-neutral-600">
-                          <Package size={16} className="text-neutral-400" />
-                          <span>{order.quantity || 0} {order.unit || 'kg'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-neutral-600">
-                          <span className="font-semibold text-primary-600">
-                            P{formatPrice(order.total_price || (order.unit_price && order.quantity ? order.unit_price * order.quantity : 0))}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-neutral-600">
-                          <Calendar size={16} className="text-neutral-400" />
-                          <span>{order.created_at ? formatDate(order.created_at) : 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-neutral-600">
-                          <MapPin size={16} className="text-neutral-400" />
-                          <span>{order.region_name || 'N/A'}</span>
-                        </div>
-                      </div>
-
-                      {/* Farmer Info */}
-                      <div className="mt-3 pt-3 border-t flex items-center gap-4">
-                        <span className="text-sm text-neutral-500">Farmer:</span>
-                        <span className="text-sm font-medium">{order.farmer_name || 'Unknown'}</span>
-                        {order.farmer_phone && (
-                          <a 
-                            href={`tel:${order.farmer_phone}`}
-                            className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700"
-                          >
-                            <Phone size={14} />
-                            {order.farmer_phone}
-                          </a>
-                        )}
+                        <p className="text-sm text-neutral-500">
+                          {items.length} item{items.length !== 1 ? 's' : ''} • {formatDate(order.created_at)}
+                        </p>
                       </div>
                     </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-2">
-                      {order.listing_id && (
-                        <Link
-                          to={`/listings/${order.listing_id}`}
-                          className="flex items-center gap-1 px-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        >
-                          View Listing
-                          <ChevronRight size={16} />
-                        </Link>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${status.color}`}>
+                        <StatusIcon size={14} />
+                        {status.label}
+                      </span>
+                      <span className="text-lg font-bold text-primary-600">
+                        P{formatPrice(order.total_price)}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Notes */}
-                  {order.notes && (
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-sm text-neutral-600">
-                        <span className="font-medium">Notes:</span> {order.notes}
-                      </p>
+                  {/* Order Items */}
+                  <div className="space-y-3 border-t pt-4">
+                    {items.map((item, index) => (
+                      <div key={item.id || index} className="flex items-center justify-between p-3 bg-neutral-50 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-neutral-800">{item.crop_name || 'Unknown'}</span>
+                            <span className="text-sm text-neutral-500">× {item.quantity} {item.unit || 'kg'}</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-1 text-sm text-neutral-500">
+                            <span>by {item.farmer_name || 'Unknown'}</span>
+                            {item.farmer_phone && (
+                              <a 
+                                href={`tel:${item.farmer_phone}`}
+                                className="flex items-center gap-1 text-primary-600 hover:text-primary-700"
+                              >
+                                <Phone size={12} />
+                                {item.farmer_phone}
+                              </a>
+                            )}
+                            {item.region_name && (
+                              <span className="flex items-center gap-1">
+                                <MapPin size={12} />
+                                {item.region_name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-semibold text-neutral-800">
+                            P{formatPrice(item.total_price)}
+                          </span>
+                          <p className="text-xs text-neutral-500">
+                            P{formatPrice(item.unit_price)}/{item.unit || 'kg'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Order Footer */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mt-4 pt-4 border-t">
+                    <div className="flex items-center gap-4 text-sm text-neutral-500">
+                      {order.delivery_preference && (
+                        <span className="capitalize">
+                          {order.delivery_preference === 'delivery' ? '🚚 Delivery' : '🏪 Pickup'}
+                        </span>
+                      )}
+                      {order.notes && (
+                        <span className="text-neutral-400">|</span>
+                      )}
+                      {order.notes && (
+                        <span className="truncate max-w-xs" title={order.notes}>
+                          Note: {order.notes}
+                        </span>
+                      )}
                     </div>
-                  )}
+                    
+                    {/* Actions */}
+                    <div className="flex items-center gap-2">
+                      {order.status === 'pending' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleCancelClick(order)}
+                          className="text-red-600 border-red-200 hover:bg-red-50"
+                        >
+                          <X size={14} />
+                          Cancel Order
+                        </Button>
+                      )}
+                    </div>
+                  </div>
                 </Card>
               );
             })}
           </div>
         )}
+
+        {/* Cancel Confirmation Modal */}
+        <Modal
+          isOpen={cancelModal}
+          onClose={() => {
+            setCancelModal(false);
+            setOrderToCancel(null);
+          }}
+          title="Cancel Order"
+          size="sm"
+        >
+          <div className="space-y-4">
+            <div className="flex items-center gap-3 p-4 bg-amber-50 rounded-lg">
+              <AlertTriangle className="text-amber-500 shrink-0" size={24} />
+              <p className="text-sm text-amber-800">
+                Are you sure you want to cancel this order? This action cannot be undone.
+              </p>
+            </div>
+
+            {orderToCancel && (
+              <div className="p-4 bg-neutral-50 rounded-lg">
+                <p className="text-sm text-neutral-600">
+                  <span className="font-medium">Order #{orderToCancel.id}</span>
+                </p>
+                <p className="text-lg font-semibold text-primary-600 mt-1">
+                  P{formatPrice(orderToCancel.total_price)}
+                </p>
+              </div>
+            )}
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setCancelModal(false);
+                  setOrderToCancel(null);
+                }}
+                className="flex-1"
+              >
+                Keep Order
+              </Button>
+              <Button
+                onClick={handleCancelConfirm}
+                loading={cancelOrder.isPending}
+                className="flex-1 bg-red-500 hover:bg-red-600"
+              >
+                Cancel Order
+              </Button>
+            </div>
+          </div>
+        </Modal>
 
         {/* Info Card */}
         <Card className="bg-primary-50 border border-primary-100">

@@ -9,6 +9,7 @@ import { UPLOAD_URL } from '../api';
 import {
   Home,
   ShoppingBag,
+  ShoppingCart,
   PlusCircle,
   TrendingUp,
   Bell,
@@ -23,6 +24,7 @@ import {
   Settings,
   Search
 } from 'lucide-react';
+import { useCartCount } from '../hooks/useApi';
 
 // Helper to get full photo URL
 const getPhotoUrl = (photo) => {
@@ -36,6 +38,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
   const { user, logout, isFarmer, isBuyer, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
+  const { data: cartCount } = useCartCount();
 
   const handleLogout = () => {
     logout();
@@ -55,6 +58,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
   const buyerLinks = [
     { to: '/listings', icon: ShoppingBag, label: 'Browse Listings' },
+    { to: '/buyer/cart', icon: ShoppingCart, label: 'Shopping Cart', showBadge: true },
     { to: '/buyer/my-orders', icon: Home, label: 'My Orders' },
     { to: '/prices', icon: TrendingUp, label: 'Market Prices' },
     { to: '/buyer/create-request', icon: PlusCircle, label: 'Post Request' },
@@ -105,16 +109,22 @@ export const Sidebar = ({ isOpen, onClose }) => {
           {links.map((link) => {
             const Icon = link.icon;
             const isActive = location.pathname === link.to;
+            const showCartBadge = link.showBadge && isBuyer && cartCount > 0;
             
             return (
               <Link
                 key={link.to}
                 to={link.to}
                 onClick={onClose}
-                className={`nav-link ${isActive ? 'nav-link-active' : ''}`}
+                className={`nav-link ${isActive ? 'nav-link-active' : ''} relative`}
               >
                 <Icon size={20} />
                 <span>{link.label}</span>
+                {showCartBadge && (
+                  <span className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 bg-secondary-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                    {cartCount > 9 ? '9+' : cartCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -159,8 +169,9 @@ export const Sidebar = ({ isOpen, onClose }) => {
 
 // Header Component
 export const Header = ({ onMenuClick }) => {
-  const { user } = useAuth();
+  const { user, isBuyer } = useAuth();
   const { data: unreadCount } = useUnreadCount();
+  const { data: cartCount } = useCartCount();
   const navigate = useNavigate();
 
   return (
@@ -188,6 +199,21 @@ export const Header = ({ onMenuClick }) => {
 
         {/* Right side */}
         <div className="flex items-center gap-4">
+          {/* Cart (buyers only) */}
+          {isBuyer && (
+            <button 
+              onClick={() => navigate('/buyer/cart')}
+              className="relative text-neutral-600 hover:text-neutral-800"
+            >
+              <ShoppingCart size={24} />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 w-5 h-5 bg-secondary-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </button>
+          )}
+
           {/* Notifications */}
           <button 
             onClick={() => navigate('/notifications')}

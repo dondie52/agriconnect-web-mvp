@@ -1,14 +1,127 @@
 /**
  * Order Controller for AgriConnect
  * Handles order operations between buyers and farmers
+ * Updated for cart-based checkout system
  */
 const Order = require('../models/Order');
+const Cart = require('../models/Cart');
 const Notification = require('../models/Notification');
 const Analytics = require('../models/Analytics');
 const Listing = require('../models/Listing');
 
 const orderController = {
-  // Create a new order (buyer)
+  /**
+   * Create order from cart (checkout)
+   * POST /api/orders/create
+   */
+  async createFromCart(req, res) {
+    try {
+      const { delivery_preference, delivery_address, notes } = req.body;
+
+      // Validate cart first
+      const validation = await Cart.validateCart(req.user.id);
+      if (!validation.valid) {
+        return res.status(400).json({
+          success: false,
+          message: 'Some items in your cart are no longer available',
+          data: { issues: validation.issues }
+        });
+      }
+
+      // Get cart items for notifications
+      const cart = await Cart.getByUser(req.user.id);
+      if (cart.items.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Your cart is empty'
+        });
+      }
+
+      // Create order from cart
+      const order = await Order.createFromCart({
+        buyer_id: req.user.id,
+        delivery_preference: delivery_preference || 'pickup',
+        delivery_address,
+        notes
+      });
+
+      // Track analytics and send notifications for each item
+      const farmerNotifications = new Map(); // Group by farmer
+
+      for (const item of cart.items) {
+        // Track order analytics
+        try {
+          await Analytics.trackOrder(item.listing_id, req.user.id);
+        } catch (e) {
+          console.error('Analytics tracking error:', e);
+        }
+
+        // Group items by farmer for notifications
+        if (!farmerNotifications.has(item.farmer_id)) {
+          farmerNotifications.set(item.farmer_id, {
+            farmer_id: item.farmer_id,
+            items: []
+          });
+        }
+        farmerNotifications.get(item.farmer_id).items.push({
+          crop_name: item.crop_name,
+          quantity: item.quantity
+        });
+      }
+
+      // Send notification to each farmer
+      for (const [farmerId, data] of farmerNotifications) {
+        const itemsDescription = data.items.map(i => `${i.quantity} ${i.crop_name}`).join(', ');
+        try {
+          await Notification.notifyFarmerNewOrder(
+            farmerId,
+            order.id,
+            req.user.name,
+            itemsDescription,
+            data.items.reduce((sum, i) => sum + parseFloat(i.quantity), 0)
+          );
+        } catch (e) {
+          console.error('Notification error:', e);
+        }
+      }
+
+      // Get full order details
+      const fullOrder = await Order.findById(order.id);
+
+      res.status(201).json({
+        success: true,
+        message: 'Order placed successfully',
+        data: fullOrder
+      });
+    } catch (error) {
+      console.error('Checkout error:', error);
+      
+      if (error.message === 'Cart is empty') {
+        return res.status(400).json({
+          success: false,
+          message: 'Your cart is empty'
+        });
+      }
+      
+      if (error.message.includes('no longer available') || 
+          error.message.includes('Only') && error.message.includes('available')) {
+        return res.status(400).json({
+          success: false,
+          message: error.message
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Failed to place order'
+      });
+    }
+  },
+
+  /**
+   * Legacy: Create a single-item order (for backward compatibility)
+   * POST /api/orders
+   */
   async create(req, res) {
     try {
       const { listing_id, quantity, delivery_preference, notes } = req.body;
@@ -234,40 +347,50 @@ const orderController = {
   // Cancel order (buyer only, if pending)
   async cancel(req, res) {
     try {
-      const order = await Order.findById(req.params.id);
+      const cancelledOrder = await Order.cancelOrder(req.params.id, req.user.id);
 
-      if (!order) {
+      // Notify farmers about cancellation
+      const order = await Order.findById(req.params.id);
+      if (order && order.items) {
+        const farmerIds = [...new Set(order.items.map(item => item.farmer_id))];
+        for (const farmerId of farmerIds) {
+          try {
+            await Notification.create({
+              user_id: farmerId,
+              type: 'order_cancelled',
+              title: 'Order Cancelled',
+              message: `Order #${order.id} has been cancelled by the buyer`,
+              reference_id: order.id,
+              reference_type: 'order'
+            });
+          } catch (e) {
+            console.error('Notification error:', e);
+          }
+        }
+      }
+
+      res.json({
+        success: true,
+        message: 'Order cancelled successfully',
+        data: cancelledOrder
+      });
+    } catch (error) {
+      console.error('Cancel order error:', error);
+      
+      if (error.message === 'Order not found') {
         return res.status(404).json({
           success: false,
           message: 'Order not found'
         });
       }
-
-      // Only buyer can cancel
-      if (order.buyer_id !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'Not authorized to cancel this order'
-        });
-      }
-
-      // Can only cancel pending orders
-      if (order.status !== 'pending') {
+      
+      if (error.message === 'Can only cancel pending orders') {
         return res.status(400).json({
           success: false,
-          message: 'Can only cancel pending orders'
+          message: error.message
         });
       }
 
-      // Use farmer_id as a placeholder since buyer is cancelling
-      await Order.updateStatus(req.params.id, 'cancelled', order.farmer_id);
-
-      res.json({
-        success: true,
-        message: 'Order cancelled successfully'
-      });
-    } catch (error) {
-      console.error('Cancel order error:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to cancel order'

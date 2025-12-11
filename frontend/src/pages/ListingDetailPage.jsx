@@ -1,9 +1,10 @@
 /**
  * Listing Detail Page for AgriConnect
+ * Updated with Add to Cart functionality
  */
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { useListing, useCreateOrder } from '../hooks/useApi';
+import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useListing, useAddToCart, useCart } from '../hooks/useApi';
 import { useAuth } from '../context/AuthContext';
 import { analyticsAPI } from '../api';
 import { Layout } from '../components/Layout';
@@ -18,7 +19,7 @@ import {
   ProductImage,
   Badge
 } from '../components/UI';
-import { MapPin, User, Phone, Calendar, ArrowLeft, ShoppingCart, MessageCircle } from 'lucide-react';
+import { MapPin, User, Phone, Calendar, ArrowLeft, ShoppingCart, MessageCircle, Plus, Minus, Check } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -28,16 +29,17 @@ const ListingDetailPage = () => {
   const { user, isBuyer } = useAuth();
   
   const { data: listing, isLoading } = useListing(id);
-  const createOrder = useCreateOrder();
+  const addToCart = useAddToCart();
+  const { data: cart } = useCart();
   
-  const [orderModal, setOrderModal] = useState(false);
+  const [addToCartModal, setAddToCartModal] = useState(false);
   const [contactModal, setContactModal] = useState(false);
-  const [orderData, setOrderData] = useState({
-    quantity: '',
-    delivery_preference: 'pickup',
-    notes: '',
-  });
+  const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Check if item is already in cart
+  const cartItem = cart?.items?.find(item => item.listing_id === parseInt(id));
+  const isInCart = !!cartItem;
 
   if (isLoading) {
     return <Layout><PageLoading /></Layout>;
@@ -73,30 +75,39 @@ const ListingDetailPage = () => {
   }
   const isOwner = user?.id === listing.farmer_id;
 
-  const handleOrder = async () => {
-    if (!orderData.quantity || orderData.quantity <= 0) {
+  const handleAddToCart = async () => {
+    if (quantity <= 0) {
       toast.error('Please enter a valid quantity');
       return;
     }
     
-    if (parseFloat(orderData.quantity) > listing.quantity) {
+    if (quantity > listing.quantity) {
       toast.error('Quantity exceeds available stock');
       return;
     }
 
     try {
-      await createOrder.mutateAsync({
+      await addToCart.mutateAsync({
         listing_id: parseInt(id),
-        quantity: parseFloat(orderData.quantity),
-        delivery_preference: orderData.delivery_preference,
-        notes: orderData.notes,
+        quantity: parseFloat(quantity),
       });
       
-      toast.success('Order placed successfully!');
-      setOrderModal(false);
-      navigate('/my-orders');
+      toast.success('Added to cart!');
+      setAddToCartModal(false);
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to place order');
+      toast.error(err.response?.data?.message || 'Failed to add to cart');
+    }
+  };
+
+  const incrementQuantity = () => {
+    if (quantity < listing.quantity) {
+      setQuantity(prev => prev + 1);
+    }
+  };
+
+  const decrementQuantity = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
     }
   };
 
@@ -212,35 +223,50 @@ const ListingDetailPage = () => {
 
             {/* Actions */}
             {!isOwner && listing.status === 'active' && (
-              <div className="flex gap-3">
+              <div className="space-y-3">
+                {isBuyer && (
+                  <>
+                    {isInCart ? (
+                      <div className="flex gap-3">
+                        <div className="flex-1 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center justify-center gap-2 text-green-700">
+                          <Check size={18} />
+                          <span className="font-medium">In Cart ({cartItem.quantity} {listing.unit})</span>
+                        </div>
+                        <Link to="/buyer/cart" className="btn-primary flex items-center gap-2">
+                          <ShoppingCart size={18} />
+                          View Cart
+                        </Link>
+                      </div>
+                    ) : (
+                      <Button
+                        onClick={() => setAddToCartModal(true)}
+                        className="w-full"
+                      >
+                        <ShoppingCart size={18} />
+                        Add to Cart
+                      </Button>
+                    )}
+                  </>
+                )}
+                
                 <Button
                   onClick={handleContact}
                   variant="outline"
-                  className="flex-1"
+                  className="w-full"
                 >
                   <MessageCircle size={18} />
                   Contact Farmer
                 </Button>
-                
-                {isBuyer && (
-                  <Button
-                    onClick={() => setOrderModal(true)}
-                    className="flex-1"
-                  >
-                    <ShoppingCart size={18} />
-                    Place Order
-                  </Button>
-                )}
               </div>
             )}
           </div>
         </div>
 
-        {/* Order Modal */}
+        {/* Add to Cart Modal */}
         <Modal
-          isOpen={orderModal}
-          onClose={() => setOrderModal(false)}
-          title="Place Order"
+          isOpen={addToCartModal}
+          onClose={() => setAddToCartModal(false)}
+          title="Add to Cart"
           size="md"
         >
           <div className="space-y-4">
@@ -259,76 +285,66 @@ const ListingDetailPage = () => {
               </div>
             </div>
 
-            <Input
-              label="Quantity"
-              type="number"
-              step="0.1"
-              min="0.1"
-              max={listing.quantity}
-              value={orderData.quantity}
-              onChange={(e) => setOrderData(prev => ({ ...prev, quantity: e.target.value }))}
-              placeholder={`Max ${listing.quantity} ${listing.unit}`}
-            />
-
+            {/* Quantity Selector */}
             <div>
-              <label className="label">Delivery Preference</label>
-              <div className="flex gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="pickup"
-                    checked={orderData.delivery_preference === 'pickup'}
-                    onChange={(e) => setOrderData(prev => ({ ...prev, delivery_preference: e.target.value }))}
-                  />
-                  <span>Pickup</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="delivery"
-                    value="delivery"
-                    checked={orderData.delivery_preference === 'delivery'}
-                    onChange={(e) => setOrderData(prev => ({ ...prev, delivery_preference: e.target.value }))}
-                  />
-                  <span>Delivery</span>
-                </label>
+              <label className="label">Quantity ({listing.unit})</label>
+              <div className="flex items-center gap-4">
+                <button
+                  type="button"
+                  onClick={decrementQuantity}
+                  disabled={quantity <= 1}
+                  className="w-12 h-12 flex items-center justify-center rounded-lg border-2 border-neutral-200 
+                           hover:bg-neutral-100 disabled:opacity-50 transition-colors"
+                >
+                  <Minus size={20} />
+                </button>
+                <input
+                  type="number"
+                  min="1"
+                  max={listing.quantity}
+                  value={quantity}
+                  onChange={(e) => {
+                    const val = parseInt(e.target.value) || 1;
+                    setQuantity(Math.min(Math.max(1, val), listing.quantity));
+                  }}
+                  className="w-24 h-12 text-center text-lg font-semibold border-2 border-neutral-200 rounded-lg focus:border-primary-500 focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={incrementQuantity}
+                  disabled={quantity >= listing.quantity}
+                  className="w-12 h-12 flex items-center justify-center rounded-lg border-2 border-neutral-200 
+                           hover:bg-neutral-100 disabled:opacity-50 transition-colors"
+                >
+                  <Plus size={20} />
+                </button>
               </div>
             </div>
 
-            <Textarea
-              label="Notes (Optional)"
-              value={orderData.notes}
-              onChange={(e) => setOrderData(prev => ({ ...prev, notes: e.target.value }))}
-              placeholder="Any special requests or instructions..."
-              rows={3}
-            />
-
-            {orderData.quantity && (
-              <div className="p-4 bg-primary-50 rounded-lg">
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Total:</span>
-                  <span className="text-primary-600">
-                    P{(parseFloat(orderData.quantity) * listing.price).toFixed(2)}
-                  </span>
-                </div>
+            <div className="p-4 bg-primary-50 rounded-lg">
+              <div className="flex justify-between text-lg font-semibold">
+                <span>Subtotal:</span>
+                <span className="text-primary-600">
+                  P{(quantity * listing.price).toFixed(2)}
+                </span>
               </div>
-            )}
+            </div>
 
             <div className="flex gap-3 pt-4">
               <Button
                 variant="outline"
-                onClick={() => setOrderModal(false)}
+                onClick={() => setAddToCartModal(false)}
                 className="flex-1"
               >
                 Cancel
               </Button>
               <Button
-                onClick={handleOrder}
-                loading={createOrder.isPending}
+                onClick={handleAddToCart}
+                loading={addToCart.isPending}
                 className="flex-1"
               >
-                Confirm Order
+                <ShoppingCart size={18} />
+                Add to Cart
               </Button>
             </div>
           </div>

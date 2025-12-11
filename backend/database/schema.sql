@@ -10,7 +10,9 @@ DROP TABLE IF EXISTS crop_plans CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS buyer_requests CASCADE;
 DROP TABLE IF EXISTS prices CASCADE;
+DROP TABLE IF EXISTS order_items CASCADE;
 DROP TABLE IF EXISTS orders CASCADE;
+DROP TABLE IF EXISTS cart_items CASCADE;
 DROP TABLE IF EXISTS listings CASCADE;
 DROP TABLE IF EXISTS crops CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
@@ -95,30 +97,63 @@ CREATE INDEX idx_listings_status ON listings(status);
 CREATE INDEX idx_listings_created ON listings(created_at DESC);
 
 -- =====================================================
+-- CART_ITEMS TABLE
+-- Shopping cart items for buyers
+-- =====================================================
+CREATE TABLE cart_items (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE CASCADE,
+    quantity DECIMAL(10, 2) NOT NULL CHECK (quantity > 0),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP,
+    UNIQUE(user_id, listing_id)
+);
+
+COMMENT ON TABLE cart_items IS 'Shopping cart items for buyers before checkout';
+CREATE INDEX idx_cart_items_user ON cart_items(user_id);
+CREATE INDEX idx_cart_items_listing ON cart_items(listing_id);
+
+-- =====================================================
 -- ORDERS TABLE
--- Orders placed by buyers
+-- Orders placed by buyers (created during checkout)
 -- =====================================================
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
-    listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE RESTRICT,
     buyer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    farmer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
-    quantity DECIMAL(10, 2) NOT NULL CHECK (quantity > 0),
-    unit_price DECIMAL(10, 2) NOT NULL,
     total_price DECIMAL(12, 2) NOT NULL,
     delivery_preference VARCHAR(20) DEFAULT 'pickup' CHECK (delivery_preference IN ('pickup', 'delivery')),
+    delivery_address TEXT,
     notes TEXT,
     status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'accepted', 'rejected', 'completed', 'cancelled')),
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP
 );
 
-COMMENT ON TABLE orders IS 'Orders placed by buyers for produce listings';
+COMMENT ON TABLE orders IS 'Orders placed by buyers during checkout';
 CREATE INDEX idx_orders_buyer ON orders(buyer_id);
-CREATE INDEX idx_orders_farmer ON orders(farmer_id);
-CREATE INDEX idx_orders_listing ON orders(listing_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_created ON orders(created_at DESC);
+
+-- =====================================================
+-- ORDER_ITEMS TABLE
+-- Individual items within an order
+-- =====================================================
+CREATE TABLE order_items (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    listing_id INTEGER NOT NULL REFERENCES listings(id) ON DELETE RESTRICT,
+    farmer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT,
+    quantity DECIMAL(10, 2) NOT NULL CHECK (quantity > 0),
+    unit_price DECIMAL(10, 2) NOT NULL,
+    total_price DECIMAL(12, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+COMMENT ON TABLE order_items IS 'Individual line items within an order';
+CREATE INDEX idx_order_items_order ON order_items(order_id);
+CREATE INDEX idx_order_items_listing ON order_items(listing_id);
+CREATE INDEX idx_order_items_farmer ON order_items(farmer_id);
 
 -- =====================================================
 -- PRICES TABLE

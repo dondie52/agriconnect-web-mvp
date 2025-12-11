@@ -9,6 +9,7 @@ const router = express.Router();
 const authRoutes = require('./auth');
 const listingRoutes = require('./listings');
 const orderRoutes = require('./orders');
+const cartRoutes = require('./cart');
 const priceRoutes = require('./prices');
 const requestRoutes = require('./requests');
 const notificationRoutes = require('./notifications');
@@ -75,6 +76,7 @@ router.get('/test-db', async (req, res) => {
 router.use('/auth', authRoutes);
 router.use('/listings', listingRoutes);
 router.use('/orders', orderRoutes);
+router.use('/cart', cartRoutes);
 router.use('/prices', priceRoutes);
 router.use('/requests', requestRoutes);
 router.use('/notifications', notificationRoutes);

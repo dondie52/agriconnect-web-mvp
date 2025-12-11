@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   listingsAPI, 
   ordersAPI, 
+  cartAPI,
   pricesAPI, 
   requestsAPI, 
   notificationsAPI,
@@ -185,6 +186,104 @@ export const useUpdateOrderStatus = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['farmerOrders'] });
       queryClient.invalidateQueries({ queryKey: ['orderStats'] });
+    },
+  });
+};
+
+export const useCancelOrder = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id) => ordersAPI.cancel(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buyerOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['orderStats'] });
+    },
+  });
+};
+
+export const useCheckout = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data) => ordersAPI.checkout(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['buyerOrders'] });
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cartCount'] });
+      queryClient.invalidateQueries({ queryKey: ['listings'] });
+    },
+  });
+};
+
+// ==================== CART HOOKS ====================
+
+export const useCart = () => {
+  return useQuery({
+    queryKey: ['cart'],
+    queryFn: async () => {
+      const response = await cartAPI.getCart();
+      return response.data.data;
+    },
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const useCartCount = () => {
+  return useQuery({
+    queryKey: ['cartCount'],
+    queryFn: async () => {
+      const response = await cartAPI.getCount();
+      return response.data.data.count;
+    },
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const useAddToCart = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ listing_id, quantity }) => cartAPI.addItem({ listing_id, quantity }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cartCount'] });
+    },
+  });
+};
+
+export const useUpdateCartItem = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, quantity }) => cartAPI.updateItem(id, quantity),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cartCount'] });
+    },
+  });
+};
+
+export const useRemoveCartItem = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id) => cartAPI.removeItem(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cartCount'] });
+    },
+  });
+};
+
+export const useClearCart = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: () => cartAPI.clearCart(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cart'] });
+      queryClient.invalidateQueries({ queryKey: ['cartCount'] });
     },
   });
 };

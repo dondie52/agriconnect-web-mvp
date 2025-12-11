@@ -54,6 +54,7 @@ const AdminDashboard = React.lazy(() => import('./pages/AdminDashboard'));
 const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
 const MyOrdersPage = React.lazy(() => import('./pages/MyOrdersPage'));
 const MyRequestsPage = React.lazy(() => import('./pages/MyRequestsPage'));
+const CartPage = React.lazy(() => import('./pages/CartPage'));
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -167,6 +168,11 @@ function App() {
                   <ListingsPage />
                 </BuyerRoute>
               } />
+              <Route path="/buyer/cart" element={
+                <BuyerRoute>
+                  <CartPage />
+                </BuyerRoute>
+              } />
               <Route path="/buyer/create-request" element={
                 <BuyerRoute>
                   <CreateRequestPage />
@@ -189,6 +195,7 @@ function App() {
               <Route path="/create-request" element={<Navigate to="/buyer/create-request" replace />} />
               <Route path="/my-orders" element={<Navigate to="/buyer/my-orders" replace />} />
               <Route path="/my-requests" element={<Navigate to="/buyer/my-requests" replace />} />
+              <Route path="/cart" element={<Navigate to="/buyer/cart" replace />} />
 
               {/* ==================== */}
               {/* Shared Routes (Farmer & Buyer) */}

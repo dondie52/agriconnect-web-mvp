@@ -27,6 +27,7 @@ import {
   Bell
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useCartCount } from '../../hooks/useApi';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -40,6 +41,7 @@ const Navbar = () => {
   const navigate = useNavigate();
 
   const { isAuthenticated, user, isFarmer, isBuyer, logout } = useAuth();
+  const { data: cartCount } = useCartCount();
 
   const categories = [
     { name: 'All Categories', value: 'All', icon: Search },
@@ -199,17 +201,21 @@ const Navbar = () => {
 
             {/* Right Actions */}
             <div className="flex items-center gap-2 md:gap-4 shrink-0">
-              {/* Cart Icon - Mobile/Desktop */}
-              <Link
-                to="/listings"
-                className="p-2 text-neutral-600 hover:text-primary-500 transition-colors relative"
-              >
-                <ShoppingCart size={24} />
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-secondary-500 text-white text-xs 
-                               rounded-full flex items-center justify-center font-medium">
-                  0
-                </span>
-              </Link>
+              {/* Cart Icon - Mobile/Desktop (only for buyers) */}
+              {isAuthenticated && isBuyer && (
+                <Link
+                  to="/buyer/cart"
+                  className="p-2 text-neutral-600 hover:text-primary-500 transition-colors relative"
+                >
+                  <ShoppingCart size={24} />
+                  {(cartCount || 0) > 0 && (
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-secondary-500 text-white text-xs 
+                                   rounded-full flex items-center justify-center font-medium">
+                      {cartCount > 9 ? '9+' : cartCount}
+                    </span>
+                  )}
+                </Link>
+              )}
 
               {/* Authenticated User Menu - Desktop */}
               {isAuthenticated ? (
@@ -487,6 +493,35 @@ const Navbar = () => {
                       >
                         <Tractor size={20} className="text-neutral-500" />
                         <span>Post Product</span>
+                      </Link>
+                    </>
+                  )}
+                  {isBuyer && (
+                    <>
+                      <Link
+                        to="/buyer/cart"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center justify-between px-3 py-2.5 text-neutral-700 hover:bg-primary-50 
+                                 hover:text-primary-600 rounded-lg transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <ShoppingCart size={20} className="text-neutral-500" />
+                          <span>Shopping Cart</span>
+                        </div>
+                        {(cartCount || 0) > 0 && (
+                          <span className="w-6 h-6 bg-secondary-500 text-white text-xs rounded-full flex items-center justify-center font-medium">
+                            {cartCount > 9 ? '9+' : cartCount}
+                          </span>
+                        )}
+                      </Link>
+                      <Link
+                        to="/buyer/my-orders"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="flex items-center gap-3 px-3 py-2.5 text-neutral-700 hover:bg-primary-50 
+                                 hover:text-primary-600 rounded-lg transition-colors"
+                      >
+                        <ShoppingBag size={20} className="text-neutral-500" />
+                        <span>My Orders</span>
                       </Link>
                     </>
                   )}
