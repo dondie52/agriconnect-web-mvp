@@ -105,14 +105,9 @@ api.interceptors.response.use(
       });
     }
     
-    if (error.response?.status === 401) {
-      // Token expired or invalid - only redirect if not already on login page
-      if (!window.location.pathname.includes('/login')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
-    }
+    // Don't automatically clear session on 401 errors
+    // User will stay logged in until they explicitly sign out
+    // API calls may fail with 401, but the session persists
     
     // Attach user-friendly message to error
     error.userMessage = getErrorMessage(error);

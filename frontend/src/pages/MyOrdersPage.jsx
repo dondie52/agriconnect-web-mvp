@@ -29,7 +29,7 @@ const statusConfig = {
 
 const MyOrdersPage = () => {
   const [statusFilter, setStatusFilter] = useState('');
-  const { data: ordersData, isLoading, error } = useBuyerOrders({ status: statusFilter || undefined });
+  const { data: ordersData, isLoading, error, refetch } = useBuyerOrders({ status: statusFilter || undefined });
 
   const orders = ordersData?.orders || [];
 
@@ -88,7 +88,7 @@ const MyOrdersPage = () => {
             description={error?.message || "Failed to load your orders. Please try again."}
             action={
               <button 
-                onClick={() => window.location.reload()} 
+                onClick={() => refetch()} 
                 className="btn-primary"
               >
                 Retry

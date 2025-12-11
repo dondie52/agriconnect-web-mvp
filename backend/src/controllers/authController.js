@@ -8,11 +8,12 @@ const bcrypt = require('bcryptjs');
 const { pool } = require('../config/db');
 
 // Generate JWT token
+// Default to 365 days for persistent login until explicit logout
 const generateToken = (userId, role) => {
   return jwt.sign(
     { userId, role },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: process.env.JWT_EXPIRES_IN || '365d' }
   );
 };
 

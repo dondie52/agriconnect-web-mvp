@@ -25,9 +25,31 @@ export const AuthProvider = ({ children }) => {
           setUser(response.data.data);
           localStorage.setItem('user', JSON.stringify(response.data.data));
         } catch (err) {
-          // Token invalid, clear storage
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
+          // Keep user logged in even if token validation fails
+          // Only clear on explicit logout to maintain persistent session
+          // If it's a network error (no response) or timeout, preserve the session
+          if (!err.response || err.code === 'ECONNABORTED' || err.code === 'ERR_NETWORK') {
+            // Network error - restore user from localStorage to maintain session
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              setUser(parsedUser);
+            } catch (parseErr) {
+              // If we can't parse, clear everything
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+            }
+          } else {
+            // Any other error (including 401/auth errors) - preserve session
+            // User will stay logged in until they explicitly sign out
+            try {
+              const parsedUser = JSON.parse(storedUser);
+              setUser(parsedUser);
+            } catch (parseErr) {
+              // If we can't parse, clear everything
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+            }
+          }
         }
       }
       setLoading(false);

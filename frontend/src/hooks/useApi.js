@@ -148,7 +148,7 @@ export const useBuyerOrders = (params) => {
       const response = await ordersAPI.getBuyerOrders(params);
       return response.data.data;
     },
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Disable auto-refetch on window focus to prevent unwanted reloads
   });
 };
 
