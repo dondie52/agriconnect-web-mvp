@@ -16,10 +16,10 @@ const MissionPage = () => {
   ];
 
   const goals = [
-    { metric: '10,000', label: 'Farmers Connected by 2025' },
-    { metric: '100%', label: 'Districts Coverage' },
-    { metric: 'P50M+', label: 'Annual Transaction Value' },
-    { metric: '50%', label: 'Income Increase for Farmers' },
+    { metric: '-', label: 'Farmers Connected by 2025' },
+    { metric: '-', label: 'Districts Coverage' },
+    { metric: '-', label: 'Annual Transaction Value' },
+    { metric: '-', label: 'Income Increase for Farmers' },
   ];
 
   return (

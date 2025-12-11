@@ -5,7 +5,7 @@
  */
 import React, { useRef, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Star, MapPin, Clock } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Star, MapPin } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { listingsAPI } from '../../api';
 import { UPLOAD_URL } from '../../api';
@@ -105,10 +105,6 @@ const FeaturedCarousel = () => {
             <h2 className="text-xl md:text-2xl font-bold text-neutral-800 font-display">
               Featured Products
             </h2>
-            <span className="hidden sm:inline-flex items-center gap-1 text-sm text-primary-600 font-medium">
-              <Clock size={14} />
-              Updated in real-time
-            </span>
           </div>
           <Link 
             to="/listings" 

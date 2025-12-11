@@ -7,10 +7,10 @@ import { ArrowLeft, Users, Target, Globe, Award, Sprout, TrendingUp } from 'luci
 
 const AboutPage = () => {
   const stats = [
-    { label: 'Active Farmers', value: '2,500+', icon: Users },
-    { label: 'Markets Connected', value: '50+', icon: Globe },
-    { label: 'Products Listed', value: '10,000+', icon: Sprout },
-    { label: 'Transactions', value: 'P5M+', icon: TrendingUp },
+    { label: 'Active Farmers', value: '-', icon: Users },
+    { label: 'Markets Connected', value: '-', icon: Globe },
+    { label: 'Products Listed', value: '-', icon: Sprout },
+    { label: 'Transactions', value: '-', icon: TrendingUp },
   ];
 
   // Founder info

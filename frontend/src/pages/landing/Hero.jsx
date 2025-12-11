@@ -29,7 +29,6 @@ const Hero = () => {
   ];
 
   const trustBadges = [
-    { icon: BadgeCheck, text: 'Verified Farmers', color: 'text-green-400' },
     { icon: ShieldCheck, text: 'Secure Transactions', color: 'text-blue-400' },
     { icon: Truck, text: 'Fast Delivery', color: 'text-yellow-400' },
     { icon: Wallet, text: 'Fair Prices', color: 'text-purple-400' },

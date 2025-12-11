@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useRegions } from '../hooks/useApi';
 import { PublicLayout } from '../components/Layout';
 import { Input, Select, Button } from '../components/UI';
-import { Eye, EyeOff } from 'lucide-react';
+import { Eye, EyeOff, Home } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const RegisterPage = () => {
@@ -101,6 +101,17 @@ const RegisterPage = () => {
   return (
     <PublicLayout>
       <div className="bg-white rounded-2xl shadow-xl p-8 animate-fadeIn">
+        {/* Back to Home Button */}
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-neutral-600 hover:text-primary-500 transition-colors text-sm font-medium"
+          >
+            <Home size={18} />
+            Back to Home
+          </Link>
+        </div>
+
         {/* Logo */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-primary-500 rounded-xl flex items-center justify-center mx-auto mb-4">

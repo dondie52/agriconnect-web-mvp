@@ -25,7 +25,6 @@ const CategoriesSection = () => {
       id: 'grains',
       name: 'Grains & Cereals',
       icon: Wheat,
-      count: 342,
       color: 'from-amber-400 to-amber-600',
       bgColor: 'bg-amber-50',
       iconColor: 'text-amber-600',
@@ -35,7 +34,6 @@ const CategoriesSection = () => {
       id: 'vegetables',
       name: 'Vegetables',
       icon: Carrot,
-      count: 567,
       color: 'from-green-400 to-green-600',
       bgColor: 'bg-green-50',
       iconColor: 'text-green-600',
@@ -45,7 +43,6 @@ const CategoriesSection = () => {
       id: 'fruits',
       name: 'Fruits',
       icon: Apple,
-      count: 234,
       color: 'from-red-400 to-red-600',
       bgColor: 'bg-red-50',
       iconColor: 'text-red-600',
@@ -55,7 +52,6 @@ const CategoriesSection = () => {
       id: 'livestock',
       name: 'Livestock & Meat',
       icon: Beef,
-      count: 189,
       color: 'from-rose-400 to-rose-600',
       bgColor: 'bg-rose-50',
       iconColor: 'text-rose-600',
@@ -65,7 +61,6 @@ const CategoriesSection = () => {
       id: 'dairy',
       name: 'Dairy Products',
       icon: Milk,
-      count: 156,
       color: 'from-blue-400 to-blue-600',
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-600',
@@ -75,7 +70,6 @@ const CategoriesSection = () => {
       id: 'poultry',
       name: 'Poultry & Eggs',
       icon: Egg,
-      count: 298,
       color: 'from-yellow-400 to-yellow-600',
       bgColor: 'bg-yellow-50',
       iconColor: 'text-yellow-600',
@@ -85,7 +79,6 @@ const CategoriesSection = () => {
       id: 'organic',
       name: 'Organic Produce',
       icon: Leaf,
-      count: 145,
       color: 'from-emerald-400 to-emerald-600',
       bgColor: 'bg-emerald-50',
       iconColor: 'text-emerald-600',
@@ -95,7 +88,6 @@ const CategoriesSection = () => {
       id: 'herbs',
       name: 'Herbs & Spices',
       icon: Flower2,
-      count: 87,
       color: 'from-purple-400 to-purple-600',
       bgColor: 'bg-purple-50',
       iconColor: 'text-purple-600',
@@ -105,7 +97,6 @@ const CategoriesSection = () => {
       id: 'fish',
       name: 'Fish & Seafood',
       icon: Fish,
-      count: 63,
       color: 'from-cyan-400 to-cyan-600',
       bgColor: 'bg-cyan-50',
       iconColor: 'text-cyan-600',
@@ -115,7 +106,6 @@ const CategoriesSection = () => {
       id: 'beverages',
       name: 'Beverages',
       icon: Coffee,
-      count: 42,
       color: 'from-orange-400 to-orange-600',
       bgColor: 'bg-orange-50',
       iconColor: 'text-orange-600',
@@ -125,7 +115,6 @@ const CategoriesSection = () => {
       id: 'wine',
       name: 'Wine & Grapes',
       icon: Grape,
-      count: 28,
       color: 'from-violet-400 to-violet-600',
       bgColor: 'bg-violet-50',
       iconColor: 'text-violet-600',
@@ -135,7 +124,6 @@ const CategoriesSection = () => {
       id: 'tree-crops',
       name: 'Tree Crops',
       icon: TreeDeciduous,
-      count: 94,
       color: 'from-teal-400 to-teal-600',
       bgColor: 'bg-teal-50',
       iconColor: 'text-teal-600',
@@ -177,15 +165,10 @@ const CategoriesSection = () => {
                 </div>
 
                 {/* Category Name */}
-                <h3 className="font-semibold text-neutral-800 text-sm md:text-base mb-1 
+                <h3 className="font-semibold text-neutral-800 text-sm md:text-base 
                              group-hover:text-primary-600 transition-colors">
                   {category.name}
                 </h3>
-
-                {/* Item Count */}
-                <p className="text-xs text-neutral-500">
-                  {category.count} products
-                </p>
               </div>
             </Link>
           ))}
@@ -243,27 +226,6 @@ const CategoriesSection = () => {
           </div>
         </div>
 
-        {/* Bottom Stats */}
-        <div className="mt-12 bg-white rounded-2xl p-6 md:p-8 shadow-card">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">12</div>
-              <div className="text-neutral-600 text-sm">Product Categories</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">2,500+</div>
-              <div className="text-neutral-600 text-sm">Active Listings</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">500+</div>
-              <div className="text-neutral-600 text-sm">Verified Sellers</div>
-            </div>
-            <div>
-              <div className="text-3xl md:text-4xl font-bold text-primary-500 mb-1">50+</div>
-              <div className="text-neutral-600 text-sm">Regions Covered</div>
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );

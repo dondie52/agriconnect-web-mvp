@@ -122,7 +122,7 @@ const ProductGrid = () => {
               Fresh From the Farm
             </h2>
             <p className="text-neutral-600">
-              Discover quality produce from verified farmers across Botswana
+              Discover quality produce from farmers across Botswana
             </p>
           </div>
           <div className="flex items-center gap-3">

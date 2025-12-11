@@ -210,7 +210,7 @@ const CommunityPage = () => {
         <div className="max-w-3xl mx-auto px-4 md:px-6 text-center">
           <h2 className="text-3xl font-bold font-display text-neutral-900 mb-6">Join the Community Today</h2>
           <p className="text-neutral-600 mb-8">
-            Connect with 2,500+ farmers across Botswana. Share knowledge, find opportunities, and grow together.
+            Connect with farmers across Botswana. Share knowledge, find opportunities, and grow together.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a 

@@ -8,8 +8,7 @@ import { ArrowRight, Sprout, ShoppingCart, Users, TrendingUp } from 'lucide-reac
 
 const CTABanner = () => {
   const benefits = [
-    { icon: Users, text: '500+ Farmers' },
-    { icon: ShoppingCart, text: '2,500+ Products' },
+    { icon: ShoppingCart, text: 'Fresh Products' },
     { icon: TrendingUp, text: 'Growing Daily' },
   ];
 

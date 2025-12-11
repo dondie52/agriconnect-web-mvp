@@ -49,13 +49,13 @@ const QuickActions = () => {
       id: 'browse',
       icon: Search,
       title: 'Browse Listings',
-      description: 'Explore thousands of fresh products from verified local farmers',
+      description: 'Explore thousands of fresh products from local farmers',
       link: '/listings',
       gradient: 'from-blue-500 to-blue-600',
       hoverGradient: 'hover:from-blue-600 hover:to-blue-700',
       iconBg: 'bg-blue-400/30',
-      stat: '2,500+',
-      statLabel: 'Active Listings',
+      stat: '',
+      statLabel: '',
       isLink: true,
     },
     {
@@ -82,7 +82,7 @@ const QuickActions = () => {
       hoverGradient: 'hover:from-purple-600 hover:to-purple-700',
       iconBg: 'bg-purple-400/30',
       stat: '500+',
-      statLabel: 'Verified Farmers',
+      statLabel: 'Farmers',
       isLink: true,
     },
     {
@@ -127,12 +127,16 @@ const QuickActions = () => {
           {action.description}
         </p>
 
-        {/* Stat */}
+        {/* Stats or Arrow */}
         <div className="flex items-center justify-between pt-4 border-t border-white/20">
-          <div>
-            <div className="text-2xl font-bold">{action.stat}</div>
-            <div className="text-xs text-white/70">{action.statLabel}</div>
-          </div>
+          {action.stat ? (
+            <div>
+              <div className="text-2xl font-bold">{action.stat}</div>
+              {action.statLabel && (
+                <div className="text-sm text-white/70">{action.statLabel}</div>
+              )}
+            </div>
+          ) : null}
           <div className="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center
                         group-hover:bg-white/30 transition-colors">
             <ArrowRight size={20} className="group-hover:translate-x-0.5 transition-transform" />

@@ -141,36 +141,9 @@ const Testimonials = () => {
           ))}
         </div>
 
-        {/* Stats Banner */}
-        <div className="mt-14 md:mt-20 bg-gradient-to-r from-primary-600 to-primary-500 
-                      rounded-2xl p-8 md:p-12 shadow-xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            {[
-              { value: '500+', label: 'Active Farmers' },
-              { value: 'P500K+', label: 'Total Sales' },
-              { value: '2,500+', label: 'Products Listed' },
-              { value: '98%', label: 'Satisfaction Rate' },
-            ].map((stat, index) => (
-              <div 
-                key={stat.label} 
-                className="animate-fade-in-up" 
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-2 font-display">
-                  {stat.value}
-                </div>
-                <div className="text-sm md:text-base text-white/80">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
 
         {/* Trust Indicators */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4 md:gap-8">
-          <div className="flex items-center gap-2 text-white/50 text-sm">
-            <BadgeCheck size={18} className="text-primary-400" />
-            <span>Verified Farmers</span>
-          </div>
           <div className="flex items-center gap-2 text-white/50 text-sm">
             <BadgeCheck size={18} className="text-primary-400" />
             <span>Secure Payments</span>

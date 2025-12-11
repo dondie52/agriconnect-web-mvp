@@ -9,7 +9,7 @@ const PressPage = () => {
   const pressReleases = [
     {
       date: 'November 2024',
-      title: 'AgriConnect Reaches 2,500 Active Farmers Milestone',
+      title: 'AgriConnect Platform Continues to Grow',
       excerpt: 'The platform continues to grow as more Batswana farmers embrace digital agriculture solutions.',
     },
     {
@@ -93,7 +93,7 @@ const PressPage = () => {
             <p className="text-neutral-700 leading-relaxed mb-4">
               <strong>AgriConnect</strong> is Botswana's leading digital agricultural marketplace, 
               connecting smallholder farmers directly with buyers. Founded in 2024, the platform 
-              serves over 2,500 farmers across all districts of Botswana.
+              serves farmers across all districts of Botswana.
             </p>
             <p className="text-neutral-700 leading-relaxed mb-4">
               The platform provides farmers with direct market access, real-time pricing information, 
@@ -182,11 +182,11 @@ const PressPage = () => {
               <div className="text-neutral-400">Founded</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-primary-400 mb-2">2,500+</div>
+              <div className="text-4xl font-bold text-primary-400 mb-2">-</div>
               <div className="text-neutral-400">Active Farmers</div>
             </div>
             <div>
-              <div className="text-4xl font-bold text-primary-400 mb-2">P5M+</div>
+              <div className="text-4xl font-bold text-primary-400 mb-2">-</div>
               <div className="text-neutral-400">Transaction Volume</div>
             </div>
             <div>
