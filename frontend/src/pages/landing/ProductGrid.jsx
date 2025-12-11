@@ -1,242 +1,106 @@
 /**
  * Product Grid Component
- * Amazon-style grid of 16 placeholder product cards
+ * Amazon-style grid of product cards with real-time data
  */
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, MapPin, Heart, ShoppingCart, Eye } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { listingsAPI, UPLOAD_URL } from '../../api';
+import { ProductImage } from '../../components/UI';
 
 const ProductGrid = () => {
   const [hoveredProduct, setHoveredProduct] = useState(null);
   const [favorites, setFavorites] = useState([]);
+  const [sortBy, setSortBy] = useState('featured');
 
-  // Placeholder products data
-  const products = [
-    {
-      id: 1,
-      title: 'Organic White Maize',
-      price: 850,
-      originalPrice: 950,
-      unit: '50kg bag',
-      image: 'https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviews: 124,
-      location: 'Gaborone',
-      seller: 'Thabo Farms',
-      inStock: true,
-      discount: 11,
+  // Fetch listings with real-time updates
+  const { data: listingsData, isLoading } = useQuery({
+    queryKey: ['productGridListings', sortBy],
+    queryFn: async () => {
+      const params = {
+        page: 1,
+        limit: 16, // Show 16 products in the grid
+      };
+
+      // Apply sorting based on selected option
+      switch (sortBy) {
+        case 'price-low':
+          params.sort_by = 'price';
+          params.sort_order = 'asc';
+          break;
+        case 'price-high':
+          params.sort_by = 'price';
+          params.sort_order = 'desc';
+          break;
+        case 'newest':
+          params.sort_by = 'created_at';
+          params.sort_order = 'desc';
+          break;
+        case 'rating':
+          // For rating, we'll sort by newest as a fallback since rating isn't in the API yet
+          params.sort_by = 'created_at';
+          params.sort_order = 'desc';
+          break;
+        case 'featured':
+        default:
+          params.sort_by = 'created_at';
+          params.sort_order = 'desc';
+          break;
+      }
+
+      const response = await listingsAPI.getAll(params);
+      return response.data.data;
     },
-    {
-      id: 2,
-      title: 'Farm Fresh Eggs (30)',
-      price: 95,
-      originalPrice: null,
-      unit: 'tray',
-      image: 'https://images.unsplash.com/photo-1582722872445-44dc5f7e3c8f?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviews: 89,
-      location: 'Francistown',
-      seller: 'Happy Hens',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 3,
-      title: 'Premium Beef Cuts',
-      price: 120,
-      originalPrice: 140,
-      unit: 'per kg',
-      image: 'https://images.unsplash.com/photo-1551028150-64b9f398f678?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviews: 56,
-      location: 'Maun',
-      seller: 'Kalahari Ranch',
-      inStock: true,
-      discount: 14,
-    },
-    {
-      id: 4,
-      title: 'Red Tomatoes (5kg)',
-      price: 45,
-      originalPrice: null,
-      unit: 'crate',
-      image: 'https://images.unsplash.com/photo-1592924357228-91a4daadcfea?w=400&h=400&fit=crop',
-      rating: 4.6,
-      reviews: 203,
-      location: 'Kasane',
-      seller: 'Green Valley',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 5,
-      title: 'Pure Raw Honey (1L)',
-      price: 180,
-      originalPrice: 220,
-      unit: 'jar',
-      image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=400&fit=crop',
-      rating: 5.0,
-      reviews: 45,
-      location: 'Nata',
-      seller: 'BeeKeep BW',
-      inStock: true,
-      discount: 18,
-    },
-    {
-      id: 6,
-      title: 'Fresh Farm Milk (5L)',
-      price: 65,
-      originalPrice: null,
-      unit: 'container',
-      image: 'https://images.unsplash.com/photo-1563636619-e9143da7973b?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviews: 167,
-      location: 'Lobatse',
-      seller: 'Dairy Dreams',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 7,
-      title: 'Butternut Squash',
-      price: 35,
-      originalPrice: null,
-      unit: 'per kg',
-      image: 'https://images.unsplash.com/photo-1570586437263-ab629fccc818?w=400&h=400&fit=crop',
-      rating: 4.5,
-      reviews: 78,
-      location: 'Palapye',
-      seller: 'Sunset Farms',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 8,
-      title: 'Free-Range Chicken',
-      price: 95,
-      originalPrice: 110,
-      unit: 'per bird',
-      image: 'https://images.unsplash.com/photo-1548550023-2bdb3c5beed7?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviews: 134,
-      location: 'Serowe',
-      seller: 'Village Poultry',
-      inStock: true,
-      discount: 14,
-    },
-    {
-      id: 9,
-      title: 'Sorghum Grain (25kg)',
-      price: 320,
-      originalPrice: null,
-      unit: 'bag',
-      image: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=400&fit=crop',
-      rating: 4.4,
-      reviews: 42,
-      location: 'Ghanzi',
-      seller: 'Heritage Grains',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 10,
-      title: 'Fresh Spinach (2kg)',
-      price: 28,
-      originalPrice: null,
-      unit: 'bunch',
-      image: 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?w=400&h=400&fit=crop',
-      rating: 4.6,
-      reviews: 89,
-      location: 'Gaborone',
-      seller: 'Green Leaf',
-      inStock: false,
-      discount: null,
-    },
-    {
-      id: 11,
-      title: 'Goat Meat (Fresh)',
-      price: 135,
-      originalPrice: 150,
-      unit: 'per kg',
-      image: 'https://images.unsplash.com/photo-1602470520998-f4a52199a3d6?w=400&h=400&fit=crop',
-      rating: 4.8,
-      reviews: 67,
-      location: 'Kanye',
-      seller: 'Local Farmers',
-      inStock: true,
-      discount: 10,
-    },
-    {
-      id: 12,
-      title: 'Onions (10kg bag)',
-      price: 55,
-      originalPrice: null,
-      unit: 'bag',
-      image: 'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=400&fit=crop',
-      rating: 4.3,
-      reviews: 156,
-      location: 'Molepolole',
-      seller: 'Farm Direct',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 13,
-      title: 'Fresh Cabbage',
-      price: 18,
-      originalPrice: null,
-      unit: 'per head',
-      image: 'https://images.unsplash.com/photo-1594282486552-05b4d80fbb9f?w=400&h=400&fit=crop',
-      rating: 4.5,
-      reviews: 98,
-      location: 'Jwaneng',
-      seller: 'Valley Fresh',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 14,
-      title: 'Groundnuts (5kg)',
-      price: 145,
-      originalPrice: 170,
-      unit: 'bag',
-      image: 'https://images.unsplash.com/photo-1567892737950-30c4db37cd89?w=400&h=400&fit=crop',
-      rating: 4.7,
-      reviews: 73,
-      location: 'Selebi-Phikwe',
-      seller: 'Nut House',
-      inStock: true,
-      discount: 15,
-    },
-    {
-      id: 15,
-      title: 'Sweet Potatoes',
-      price: 40,
-      originalPrice: null,
-      unit: 'per kg',
-      image: 'https://images.unsplash.com/photo-1596097635121-14b38e5b97f2?w=400&h=400&fit=crop',
-      rating: 4.6,
-      reviews: 112,
-      location: 'Ramotswa',
-      seller: 'Root Farms',
-      inStock: true,
-      discount: null,
-    },
-    {
-      id: 16,
-      title: 'Morogo (Wild Spinach)',
-      price: 25,
-      originalPrice: null,
-      unit: 'bunch',
-      image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?w=400&h=400&fit=crop',
-      rating: 4.9,
-      reviews: 201,
-      location: 'Tlokweng',
-      seller: 'Traditional Greens',
-      inStock: true,
-      discount: null,
-    },
-  ];
+    refetchInterval: 10000, // Refresh every 10 seconds for real-time updates
+    refetchOnWindowFocus: true,
+    staleTime: 5000, // Consider data fresh for 5 seconds
+  });
+
+  // Transform listings data to match component format
+  const products = useMemo(() => {
+    if (!listingsData?.listings) return [];
+    
+    return listingsData.listings.map((listing) => {
+      // Parse images
+      let images = [];
+      try {
+        if (Array.isArray(listing.images)) {
+          images = listing.images;
+        } else if (typeof listing.images === 'string') {
+          images = JSON.parse(listing.images);
+        }
+      } catch (e) {
+        images = [];
+      }
+      
+      const firstImage = images[0];
+      const imageUrl = firstImage 
+        ? (firstImage.startsWith('http') ? firstImage : `${UPLOAD_URL}/${firstImage}`)
+        : null;
+
+      // Determine if product is in stock
+      const inStock = parseFloat(listing.quantity) > 0;
+
+      // Calculate discount if original price exists (placeholder logic)
+      const discount = null; // Can be enhanced later with actual discount data
+
+      return {
+        id: listing.id,
+        title: listing.crop_name,
+        image: imageUrl,
+        seller: listing.farmer_name,
+        location: listing.region_name,
+        rating: 4.5, // Default rating (can be enhanced later with actual ratings)
+        reviews: Math.floor(Math.random() * 50) + 10, // Placeholder reviews
+        price: parseFloat(listing.price).toFixed(2),
+        originalPrice: null, // Can be enhanced later
+        unit: listing.unit,
+        discount: discount,
+        inStock: inStock,
+      };
+    });
+  }, [listingsData]);
 
   const toggleFavorite = (e, productId) => {
     e.preventDefault();
@@ -262,8 +126,12 @@ const ProductGrid = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
-            <select className="px-4 py-2 border border-neutral-300 rounded-lg text-neutral-700 
-                           focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white">
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="px-4 py-2 border border-neutral-300 rounded-lg text-neutral-700 
+                           focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white"
+            >
               <option value="featured">Featured</option>
               <option value="price-low">Price: Low to High</option>
               <option value="price-high">Price: High to Low</option>
@@ -281,8 +149,32 @@ const ProductGrid = () => {
         </div>
 
         {/* Products Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-          {products.map((product) => (
+        {isLoading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {Array.from({ length: 8 }).map((_, idx) => (
+              <div
+                key={`skeleton-${idx}`}
+                className="bg-white rounded-xl border border-neutral-200 overflow-hidden 
+                          shadow-sm h-full flex flex-col animate-pulse"
+              >
+                <div className="relative aspect-square overflow-hidden bg-neutral-200" />
+                <div className="p-3 md:p-4 space-y-2">
+                  <div className="h-4 bg-neutral-200 rounded w-3/4" />
+                  <div className="h-3 bg-neutral-200 rounded w-1/2" />
+                  <div className="h-3 bg-neutral-200 rounded w-2/3" />
+                  <div className="h-6 bg-neutral-200 rounded w-1/3" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : products.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-neutral-500 text-lg mb-2">No products available at the moment.</p>
+            <p className="text-neutral-400 text-sm">Check back soon for new listings!</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            {products.map((product) => (
             <Link
               key={product.id}
               to={`/listings/${product.id}`}
@@ -294,7 +186,7 @@ const ProductGrid = () => {
                             shadow-sm hover:shadow-lg transition-all duration-300 h-full flex flex-col">
                 {/* Image Container */}
                 <div className="relative aspect-square overflow-hidden bg-neutral-100">
-                  <img
+                  <ProductImage
                     src={product.image}
                     alt={product.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -410,8 +302,9 @@ const ProductGrid = () => {
                 </div>
               </div>
             </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
         {/* Load More Button */}
         <div className="text-center mt-10">
@@ -422,7 +315,6 @@ const ProductGrid = () => {
                      transition-colors"
           >
             Explore All Products
-            <span className="text-sm font-normal">(2,500+ listings)</span>
           </Link>
         </div>
       </div>
