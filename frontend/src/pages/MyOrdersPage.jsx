@@ -41,6 +41,12 @@ const MyOrdersPage = () => {
     });
   };
 
+  // Safely format price - handles strings, numbers, null, undefined
+  const formatPrice = (price) => {
+    const num = Number(price);
+    return isNaN(num) ? '0.00' : num.toFixed(2);
+  };
+
   return (
     <Layout>
       <div className="space-y-6 animate-fadeIn">
@@ -136,7 +142,7 @@ const MyOrdersPage = () => {
                         </div>
                         <div className="flex items-center gap-2 text-neutral-600">
                           <span className="font-semibold text-primary-600">
-                            P{order.total_price?.toFixed(2) || (order.unit_price && order.quantity ? (order.unit_price * order.quantity).toFixed(2) : '0.00')}
+                            P{formatPrice(order.total_price || (order.unit_price && order.quantity ? order.unit_price * order.quantity : 0))}
                           </span>
                         </div>
                         <div className="flex items-center gap-2 text-neutral-600">
