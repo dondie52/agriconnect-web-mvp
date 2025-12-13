@@ -49,6 +49,7 @@ export const Sidebar = ({ isOpen, onClose }) => {
     { to: '/dashboard', icon: Home, label: 'Dashboard' },
     { to: '/my-listings', icon: ShoppingBag, label: 'My Listings' },
     { to: '/create-listing', icon: PlusCircle, label: 'Create Listing' },
+    { to: '/farmer/livestock', icon: ShoppingBag, label: 'My Livestock' },
     { to: '/prices', icon: TrendingUp, label: 'Market Prices' },
     { to: '/buyer-requests', icon: Search, label: 'Buyer Requests' },
     { to: '/crop-planner', icon: Calendar, label: 'Crop Planner' },

@@ -55,6 +55,9 @@ const ProfilePage = React.lazy(() => import('./pages/ProfilePage'));
 const MyOrdersPage = React.lazy(() => import('./pages/MyOrdersPage'));
 const MyRequestsPage = React.lazy(() => import('./pages/MyRequestsPage'));
 const CartPage = React.lazy(() => import('./pages/CartPage'));
+const LivestockPage = React.lazy(() => import('./pages/LivestockPage'));
+const AddLivestockPage = React.lazy(() => import('./pages/AddLivestockPage'));
+const LivestockDetailPage = React.lazy(() => import('./pages/LivestockDetailPage'));
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -150,6 +153,26 @@ function App() {
               <Route path="/farmer/analytics" element={
                 <FarmerRoute>
                   <AnalyticsPage />
+                </FarmerRoute>
+              } />
+              <Route path="/farmer/livestock" element={
+                <FarmerRoute>
+                  <LivestockPage />
+                </FarmerRoute>
+              } />
+              <Route path="/farmer/livestock/add" element={
+                <FarmerRoute>
+                  <AddLivestockPage />
+                </FarmerRoute>
+              } />
+              <Route path="/farmer/livestock/:id" element={
+                <FarmerRoute>
+                  <LivestockDetailPage />
+                </FarmerRoute>
+              } />
+              <Route path="/farmer/livestock/:id/edit" element={
+                <FarmerRoute>
+                  <AddLivestockPage />
                 </FarmerRoute>
               } />
 

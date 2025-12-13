@@ -14,7 +14,8 @@ import {
   analyticsAPI,
   referenceAPI,
   adminAPI,
-  dashboardAPI
+  dashboardAPI,
+  livestockAPI
 } from '../api';
 
 // ==================== REFERENCE DATA HOOKS ====================
@@ -541,6 +542,103 @@ export const useToggleUserStatus = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['adminUsers'] });
       queryClient.invalidateQueries({ queryKey: ['adminDashboard'] });
+    },
+  });
+};
+
+// ==================== LIVESTOCK HOOKS ====================
+
+export const useLivestock = (params) => {
+  return useQuery({
+    queryKey: ['livestock', params],
+    queryFn: async () => {
+      const response = await livestockAPI.getAll(params);
+      return response.data.data;
+    },
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const useLivestockSummary = () => {
+  return useQuery({
+    queryKey: ['livestockSummary'],
+    queryFn: async () => {
+      const response = await livestockAPI.getSummary();
+      return response.data.data;
+    },
+    refetchOnWindowFocus: true,
+  });
+};
+
+export const useLivestockDetail = (id) => {
+  return useQuery({
+    queryKey: ['livestock', id],
+    queryFn: async () => {
+      const response = await livestockAPI.getById(id);
+      return response.data.data;
+    },
+    enabled: !!id,
+  });
+};
+
+export const useLivestockEvents = (id) => {
+  return useQuery({
+    queryKey: ['livestockEvents', id],
+    queryFn: async () => {
+      const response = await livestockAPI.getEvents(id);
+      return response.data.data;
+    },
+    enabled: !!id,
+  });
+};
+
+export const useCreateLivestock = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data) => livestockAPI.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['livestock'] });
+      queryClient.invalidateQueries({ queryKey: ['livestockSummary'] });
+    },
+  });
+};
+
+export const useUpdateLivestock = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }) => livestockAPI.update(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['livestock', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['livestock'] });
+      queryClient.invalidateQueries({ queryKey: ['livestockSummary'] });
+    },
+  });
+};
+
+export const useDeleteLivestock = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (id) => livestockAPI.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['livestock'] });
+      queryClient.invalidateQueries({ queryKey: ['livestockSummary'] });
+    },
+  });
+};
+
+export const useAddLivestockEvent = () => {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ id, data }) => livestockAPI.addEvent(id, data),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['livestockEvents', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['livestock', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['livestock'] });
+      queryClient.invalidateQueries({ queryKey: ['livestockSummary'] });
     },
   });
 };

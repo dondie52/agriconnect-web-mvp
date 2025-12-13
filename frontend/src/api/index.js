@@ -256,4 +256,16 @@ export const dashboardAPI = {
   getStats: () => api.get('/dashboard/stats'),
 };
 
+// Livestock API
+export const livestockAPI = {
+  getAll: (params) => api.get('/livestock', { params }),
+  getSummary: () => api.get('/livestock/summary'),
+  getById: (id) => api.get(`/livestock/${id}`),
+  create: (data) => api.post('/livestock', data),
+  update: (id, data) => api.put(`/livestock/${id}`, data),
+  delete: (id) => api.delete(`/livestock/${id}`),
+  getEvents: (id, params) => api.get(`/livestock/${id}/events`, { params }),
+  addEvent: (id, data) => api.post(`/livestock/${id}/events`, data),
+};
+
 export default api;

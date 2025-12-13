@@ -19,6 +19,7 @@ const analyticsRoutes = require('./analytics');
 const adminRoutes = require('./admin');
 const aiRoutes = require('./aiRoutes');
 const chatRoutes = require('./chatRoutes');
+const livestockRoutes = require('./livestock');
 
 // Import controllers
 const dashboardController = require('../controllers/dashboardController');
@@ -86,6 +87,7 @@ router.use('/analytics', analyticsRoutes);
 router.use('/admin', adminRoutes);
 router.use('/ai', aiRoutes);
 router.use('/chat', chatRoutes);
+router.use('/livestock', livestockRoutes);
 
 // Dashboard stats endpoint (optimized for real-time updates)
 router.get('/dashboard/stats', auth, dashboardController.getStats);
