@@ -58,6 +58,7 @@ const CartPage = React.lazy(() => import('./pages/CartPage'));
 const LivestockPage = React.lazy(() => import('./pages/LivestockPage'));
 const AddLivestockPage = React.lazy(() => import('./pages/AddLivestockPage'));
 const LivestockDetailPage = React.lazy(() => import('./pages/LivestockDetailPage'));
+const OrdersPage = React.lazy(() => import('./pages/OrdersPage'));
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -226,6 +227,11 @@ function App() {
               <Route path="/listings" element={
                 <ProtectedRoute>
                   <ListingsPage />
+                </ProtectedRoute>
+              } />
+              <Route path="/orders" element={
+                <ProtectedRoute>
+                  <OrdersPage />
                 </ProtectedRoute>
               } />
               <Route path="/listings/:id" element={
